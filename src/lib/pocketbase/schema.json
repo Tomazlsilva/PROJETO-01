@@ -1,15 +1,15 @@
 {
-  "generatedAt": "2026-09-09T19:18:02.998Z",
+  "generatedAt": "2026-09-09T20:13:39.624Z",
   "collections": [
     {
       "name": "users",
       "type": "auth",
       "apiRules": {
-        "list": "id = @request.auth.id",
-        "view": "id = @request.auth.id",
-        "create": "",
-        "update": "id = @request.auth.id",
-        "delete": "id = @request.auth.id"
+        "list": "@request.auth.id != '' && (id = @request.auth.id || @request.auth.role = 'admin')",
+        "view": "@request.auth.id != '' && (id = @request.auth.id || @request.auth.role = 'admin')",
+        "create": "@request.auth.role = 'admin'",
+        "update": "@request.auth.id != '' && (id = @request.auth.id || @request.auth.role = 'admin')",
+        "delete": "@request.auth.role = 'admin'"
       },
       "fields": [
         {
@@ -29,20 +29,124 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
+        },
+        {
+          "name": "role",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": [
+            "admin",
+            "coordenador",
+            "projetista",
+            "revisor",
+            "executivo"
+          ]
+        },
+        {
+          "name": "active",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "failed_attempts",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "locked_until",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "session_issued_at",
+          "type": "date",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": [
         "CREATE UNIQUE INDEX `idx_tokenKey__pb_users_auth_` ON `users` (`tokenKey`)",
         "CREATE UNIQUE INDEX `idx_email__pb_users_auth_` ON `users` (`email`) WHERE `email` != ''"
       ]
+    },
+    {
+      "name": "auth_audit",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.role = 'admin'",
+        "view": "@request.auth.role = 'admin'",
+        "create": null,
+        "update": null,
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "actor_id",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "target_id",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "action",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "outcome",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": [
+            "success",
+            "failure",
+            "blocked"
+          ]
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate"
+          ]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
+        }
+      ],
+      "indexes": []
     }
   ]
 }
