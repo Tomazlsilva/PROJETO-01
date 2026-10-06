@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-06T13:13:58.214Z",
+  "generatedAt": "2026-10-06T14:03:37.624Z",
   "collections": [
     {
       "name": "users",
@@ -169,8 +169,8 @@
       "apiRules": {
         "list": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'executivo' || coordenador = @request.auth.id || membros.id ?= @request.auth.id)",
         "view": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'executivo' || coordenador = @request.auth.id || membros.id ?= @request.auth.id)",
-        "create": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || (@request.auth.role = 'coordenador' && @request.body.coordenador = @request.auth.id))",
-        "update": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || (@request.auth.role = 'coordenador' && coordenador = @request.auth.id && (@request.body.coordenador:isset = false || @request.body.coordenador = @request.auth.id)))",
+        "create": null,
+        "update": null,
         "delete": null
       },
       "fields": [
@@ -327,10 +327,10 @@
       "name": "clientes",
       "type": "base",
       "apiRules": {
-        "list": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'executivo')",
-        "view": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'executivo')",
+        "list": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'executivo' || (@collection.projetos:p.cliente ?= id && (@collection.projetos:p.coordenador ?= @request.auth.id || @collection.projetos:p.membros.id ?= @request.auth.id)))",
+        "view": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'executivo' || (@collection.projetos:p.cliente ?= id && (@collection.projetos:p.coordenador ?= @request.auth.id || @collection.projetos:p.membros.id ?= @request.auth.id)))",
         "create": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && @request.auth.role = 'admin'",
-        "update": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && @request.auth.role = 'admin'",
+        "update": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || (@request.auth.role = 'coordenador' && @collection.projetos:pc.cliente ?= id && @collection.projetos:pc.coordenador ?= @request.auth.id))",
         "delete": null
       },
       "fields": [
@@ -423,8 +423,8 @@
       "apiRules": {
         "list": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'executivo' || projeto.coordenador = @request.auth.id || projeto.membros.id ?= @request.auth.id)",
         "view": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'executivo' || projeto.coordenador = @request.auth.id || projeto.membros.id ?= @request.auth.id)",
-        "create": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || (@request.auth.role = 'coordenador' && @request.body.projeto.coordenador = @request.auth.id))",
-        "update": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || (@request.auth.role = 'coordenador' && projeto.coordenador = @request.auth.id && (@request.body.projeto:isset = false || @request.body.projeto = projeto)))",
+        "create": null,
+        "update": null,
         "delete": null
       },
       "fields": [
@@ -467,11 +467,96 @@
             "onCreate",
             "onUpdate"
           ]
+        },
+        {
+          "name": "responsavel_herdado",
+          "type": "bool",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": [
         "CREATE UNIQUE INDEX idx_projeto_disciplinas_unica ON projeto_disciplinas (projeto, disciplina)",
         "CREATE INDEX idx_projeto_disciplinas_resp ON projeto_disciplinas (responsavel)"
+      ]
+    },
+    {
+      "name": "projeto_historico",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'executivo' || projeto.coordenador = @request.auth.id || projeto.membros.id ?= @request.auth.id)",
+        "view": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'executivo' || projeto.coordenador = @request.auth.id || projeto.membros.id ?= @request.auth.id)",
+        "create": null,
+        "update": null,
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "projeto",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "projetos"
+        },
+        {
+          "name": "autor",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "acao",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "campo",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "antes",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "depois",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "detalhes",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate"
+          ]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_projeto_historico_projeto ON projeto_historico (projeto, created)"
       ]
     }
   ]

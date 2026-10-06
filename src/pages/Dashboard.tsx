@@ -1,20 +1,33 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { FolderKanban, ShieldCheck, ChevronRight, Loader2 } from 'lucide-react'
+import { FolderKanban, ShieldCheck, ChevronRight, Loader2, Plus } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Switch } from '@/components/ui/switch'
 import { useAuth } from '@/contexts/AuthContext'
 import { ROLE_LABEL, ROLE_PERMISSIONS } from '@/lib/permissions'
-import { listMeusProjetos, type Projeto } from '@/services/projetos'
+import { formatarData, listMeusProjetos, type Projeto } from '@/services/projetos'
+
+const PRIORIDADE_COR: Record<string, string> = {
+  Urgente: 'bg-red-50 text-red-700 border-red-100',
+  Alta: 'bg-amber-50 text-amber-800 border-amber-100',
+  Normal: 'bg-slate-50 text-slate-600 border-slate-200',
+  Baixa: 'bg-slate-50 text-slate-500 border-slate-200',
+}
 
 export default function Dashboard() {
   const { user, role } = useAuth()
   const [projetos, setProjetos] = useState<Projeto[] | null>(null)
   const [erro, setErro] = useState(false)
+  const [arquivados, setArquivados] = useState(false)
+  const podeCriar = role === 'admin' || role === 'coordenador'
 
   useEffect(() => {
-    listMeusProjetos()
+    setProjetos(null)
+    setErro(false)
+    listMeusProjetos(arquivados)
       .then(setProjetos)
       .catch(() => setErro(true))
-  }, [])
+  }, [arquivados])
 
   const userName = (user?.name as string) || (user?.email as string)?.split('@')[0] || 'Usuário'
 
@@ -30,9 +43,24 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <section className="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <FolderKanban className="w-5 h-5 text-[#1E3A8A]" />
-            <h2 className="text-base font-bold text-slate-900">Projetos que você pode ver</h2>
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <div className="flex items-center gap-2">
+              <FolderKanban className="w-5 h-5 text-[#1E3A8A]" />
+              <h2 className="text-base font-bold text-slate-900">Projetos que você pode ver</h2>
+            </div>
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-2 text-xs text-slate-500 cursor-pointer">
+                <Switch checked={arquivados} onCheckedChange={setArquivados} />
+                Mostrar arquivados
+              </label>
+              {podeCriar && (
+                <Button asChild size="sm" className="bg-[#1E3A8A] hover:bg-[#1E2A6B] gap-1">
+                  <Link to="/projetos/novo">
+                    <Plus className="w-4 h-4" /> Novo projeto
+                  </Link>
+                </Button>
+              )}
+            </div>
           </div>
           {projetos === null && !erro && (
             <div className="flex items-center gap-2 text-sm text-slate-500">
@@ -49,12 +77,33 @@ export default function Dashboard() {
                 <li key={p.id}>
                   <Link
                     to={`/projetos/${p.id}`}
-                    className="flex items-center justify-between py-3 px-2 -mx-2 rounded-md hover:bg-slate-50"
+                    className="flex items-center justify-between gap-3 py-3 px-2 -mx-2 rounded-md hover:bg-slate-50"
                   >
-                    <span className="text-sm font-medium text-slate-800">{p.nome}</span>
-                    <span className="flex items-center gap-2 text-xs text-slate-500">
+                    <span className="min-w-0">
+                      <span
+                        className={`block text-sm font-medium truncate ${p.arquivado ? 'text-slate-400' : 'text-slate-800'}`}
+                      >
+                        {p.nome}
+                      </span>
+                      <span className="block text-xs text-slate-500">
+                        {p.tipologia || 'Sem tipologia'} · prazo {formatarData(p.prazo)}
+                      </span>
+                    </span>
+                    <span className="flex items-center gap-2 text-xs text-slate-500 shrink-0">
+                      {p.arquivado && (
+                        <span className="px-2 py-0.5 rounded-full bg-slate-100 border border-slate-200">
+                          arquivado
+                        </span>
+                      )}
+                      {p.prioridade && (
+                        <span
+                          className={`px-2 py-0.5 rounded-full border ${PRIORIDADE_COR[p.prioridade] ?? ''}`}
+                        >
+                          {p.prioridade}
+                        </span>
+                      )}
                       {p.coordenador === user?.id && (
-                        <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
+                        <span className="hidden sm:inline px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
                           você coordena
                         </span>
                       )}

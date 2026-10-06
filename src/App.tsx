@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard'
 import NotFound from './pages/NotFound'
 import ResetPassword from './pages/ResetPassword'
 import ProjetoDetalhe from './pages/ProjetoDetalhe'
+import ProjetoNovo from './pages/ProjetoNovo'
 import Usuarios from './pages/admin/Usuarios'
 import Auditoria from './pages/admin/Auditoria'
 import Layout from './components/Layout'
@@ -27,6 +28,7 @@ const App = () => (
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route element={<AppShell />}>
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/projetos/novo" element={<ProjetoNovo />} />
             <Route path="/projetos/:id" element={<ProjetoDetalhe />} />
           </Route>
           <Route element={<AppShell roles={['admin']} />}>
