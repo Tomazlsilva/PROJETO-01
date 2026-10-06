@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth, SESSION_ENDED_KEY } from '@/contexts/AuthContext'
 import { CmxLogo } from '@/components/CmxLogo'
 import { ForgotPasswordModal } from '@/components/ForgotPasswordModal'
 
@@ -49,6 +49,19 @@ export default function Index() {
       navigate('/dashboard', { replace: true })
     }
   }, [authChecking, isAuthenticated, navigate])
+
+  // Mostra o motivo quando a sessão foi encerrada (8h, revogação ou nova senha)
+  useEffect(() => {
+    try {
+      const motivo = sessionStorage.getItem(SESSION_ENDED_KEY)
+      if (motivo) {
+        setServerError(motivo)
+        sessionStorage.removeItem(SESSION_ENDED_KEY)
+      }
+    } catch {
+      // armazenamento indisponível
+    }
+  }, [])
 
   // Carrega e-mail persistido do localStorage
   useEffect(() => {
@@ -131,8 +144,9 @@ export default function Index() {
 
       navigate('/dashboard')
     } catch (err: unknown) {
-      // Trata erro de rede vs credenciais inválidas
-      let message = 'Credenciais inválidas. Verifique seu e-mail e senha.'
+      // Mensagem única: não revela se a conta existe, está bloqueada ou revogada
+      let message =
+        'Não foi possível entrar. Verifique e-mail e senha. Após 5 tentativas inválidas o acesso fica bloqueado por 15 minutos.'
       if (err instanceof Error) {
         if (
           err.message.includes('Failed to fetch') ||

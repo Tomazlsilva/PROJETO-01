@@ -7,7 +7,11 @@ import Index from './pages/Index'
 import Dashboard from './pages/Dashboard'
 import NotFound from './pages/NotFound'
 import ResetPassword from './pages/ResetPassword'
+import ProjetoDetalhe from './pages/ProjetoDetalhe'
+import Usuarios from './pages/admin/Usuarios'
+import Auditoria from './pages/admin/Auditoria'
 import Layout from './components/Layout'
+import AppShell from './components/AppShell'
 
 // ONLY IMPORT AND RENDER WORKING PAGES, NEVER ADD PLACEHOLDER COMPONENTS OR PAGES IN THIS FILE
 // AVOID REMOVING ANY CONTEXT PROVIDERS FROM THIS FILE (e.g. TooltipProvider, Toaster, Sonner)
@@ -20,8 +24,15 @@ const App = () => (
       <Routes>
         <Route element={<Layout />}>
           <Route path="/" element={<Index />} />
-          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route element={<AppShell />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/projetos/:id" element={<ProjetoDetalhe />} />
+          </Route>
+          <Route element={<AppShell roles={['admin']} />}>
+            <Route path="/admin/usuarios" element={<Usuarios />} />
+            <Route path="/admin/auditoria" element={<Auditoria />} />
+          </Route>
           {/* ADD ALL CUSTOM ROUTES MUST BE ADDED HERE */}
         </Route>
         <Route path="*" element={<NotFound />} />

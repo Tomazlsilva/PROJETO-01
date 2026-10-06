@@ -73,15 +73,16 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
       await requestPasswordReset(email)
       setIsSuccess(true)
     } catch (err: unknown) {
-      // Se der erro 404/400 de e-mail não encontrado ou erro genérico
-      const msg =
-        err &&
-        typeof err === 'object' &&
-        'status' in err &&
-        (err as { status?: number }).status === 404
-          ? 'Não encontramos uma conta com esse e-mail.'
-          : 'Não encontramos uma conta com esse e-mail.'
-      setError(msg)
+      // Resposta uniforme: nunca revela se o e-mail tem conta. Só falha de rede aparece.
+      const status =
+        err && typeof err === 'object' && 'status' in err
+          ? (err as { status?: number }).status
+          : undefined
+      if (status === 0 || status === undefined) {
+        setError('Não foi possível conectar ao servidor. Tente novamente.')
+      } else {
+        setIsSuccess(true)
+      }
     } finally {
       setIsLoading(false)
     }
@@ -119,7 +120,8 @@ export const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({
             <div className="space-y-1.5">
               <h3 className="text-xl font-bold tracking-tight text-slate-900">Link enviado!</h3>
               <p className="text-sm text-slate-500 max-w-xs">
-                Verifique seu e-mail. Enviamos instruções e o link seguro para redefinir sua senha.
+                Se houver uma conta com esse e-mail, enviaremos um link para redefinir a senha. O
+                link vale por 15 minutos e só pode ser usado uma vez.
               </p>
             </div>
 

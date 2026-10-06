@@ -1,15 +1,15 @@
 {
-  "generatedAt": "2026-09-09T20:30:11.950Z",
+  "generatedAt": "2026-10-06T13:03:07.933Z",
   "collections": [
     {
       "name": "users",
       "type": "auth",
       "apiRules": {
-        "list": "@request.auth.id != '' && (id = @request.auth.id || @request.auth.role = 'admin')",
-        "view": "@request.auth.id != '' && (id = @request.auth.id || @request.auth.role = 'admin')",
-        "create": "@request.auth.role = 'admin'",
-        "update": "@request.auth.id != '' && (id = @request.auth.id || @request.auth.role = 'admin')",
-        "delete": "@request.auth.role = 'admin'"
+        "list": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (id = @request.auth.id || @request.auth.role = 'admin')",
+        "view": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (id = @request.auth.id || @request.auth.role = 'admin')",
+        "create": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now",
+        "update": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (id = @request.auth.id || @request.auth.role = 'admin')",
+        "delete": null
       },
       "fields": [
         {
@@ -29,21 +29,32 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         },
         {
           "name": "role",
           "type": "select",
           "required": false,
           "system": false,
-          "selectValues": ["admin", "coordenador", "projetista", "revisor", "executivo"]
+          "selectValues": [
+            "admin",
+            "coordenador",
+            "projetista",
+            "revisor",
+            "executivo"
+          ]
         },
         {
           "name": "active",
@@ -68,6 +79,12 @@
           "type": "date",
           "required": false,
           "system": false
+        },
+        {
+          "name": "session_expires_at",
+          "type": "date",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": [
@@ -79,8 +96,8 @@
       "name": "auth_audit",
       "type": "base",
       "apiRules": {
-        "list": "@request.auth.role = 'admin'",
-        "view": "@request.auth.role = 'admin'",
+        "list": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && @request.auth.role = 'admin'",
+        "view": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && @request.auth.role = 'admin'",
         "create": null,
         "update": null,
         "delete": null
@@ -109,24 +126,152 @@
           "type": "select",
           "required": false,
           "system": false,
-          "selectValues": ["success", "failure", "blocked"]
+          "selectValues": [
+            "success",
+            "failure",
+            "blocked"
+          ]
         },
         {
           "name": "created",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
+        },
+        {
+          "name": "details",
+          "type": "json",
+          "required": false,
+          "system": false
         }
       ],
-      "indexes": []
+      "indexes": [
+        "CREATE INDEX `idx_auth_audit_target` ON `auth_audit` (target_id, created)",
+        "CREATE INDEX `idx_auth_audit_actor` ON `auth_audit` (actor_id, created)"
+      ]
+    },
+    {
+      "name": "projetos",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'executivo' || coordenador = @request.auth.id || membros.id ?= @request.auth.id)",
+        "view": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'executivo' || coordenador = @request.auth.id || membros.id ?= @request.auth.id)",
+        "create": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || (@request.auth.role = 'coordenador' && @request.body.coordenador = @request.auth.id))",
+        "update": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || (@request.auth.role = 'coordenador' && coordenador = @request.auth.id && (@request.body.coordenador:isset = false || @request.body.coordenador = @request.auth.id)))",
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "nome",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "coordenador",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "membros",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate"
+          ]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_projetos_coordenador ON projetos (coordenador)"
+      ]
+    },
+    {
+      "name": "revisoes",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'executivo' || projeto.coordenador = @request.auth.id || projeto.membros.id ?= @request.auth.id)",
+        "view": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'executivo' || projeto.coordenador = @request.auth.id || projeto.membros.id ?= @request.auth.id)",
+        "create": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && @request.body.autor = @request.auth.id && (@request.auth.role = 'admin' || ((@request.auth.role = 'revisor' || @request.auth.role = 'coordenador') && (@request.body.projeto.coordenador = @request.auth.id || @request.body.projeto.membros.id ?= @request.auth.id)))",
+        "update": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && autor = @request.auth.id && (@request.body.autor:isset = false || @request.body.autor = @request.auth.id) && (@request.body.projeto:isset = false || @request.body.projeto = projeto)",
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "projeto",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "projetos"
+        },
+        {
+          "name": "autor",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "parecer",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate"
+          ]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_revisoes_projeto ON revisoes (projeto, created)"
+      ]
     }
   ]
 }
