@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-06T13:03:07.933Z",
+  "generatedAt": "2026-10-06T13:13:58.214Z",
   "collections": [
     {
       "name": "users",
@@ -212,10 +212,60 @@
             "onCreate",
             "onUpdate"
           ]
+        },
+        {
+          "name": "cliente",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "clientes"
+        },
+        {
+          "name": "local",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "tipologia",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "prazo",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "prioridade",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": [
+            "Baixa",
+            "Normal",
+            "Alta",
+            "Urgente"
+          ]
+        },
+        {
+          "name": "link_entrada",
+          "type": "url",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "arquivado",
+          "type": "bool",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": [
-        "CREATE INDEX idx_projetos_coordenador ON projetos (coordenador)"
+        "CREATE INDEX idx_projetos_coordenador ON projetos (coordenador)",
+        "CREATE INDEX `idx_projetos_cliente_tipologia` ON `projetos` (cliente, tipologia)"
       ]
     },
     {
@@ -271,6 +321,157 @@
       ],
       "indexes": [
         "CREATE INDEX idx_revisoes_projeto ON revisoes (projeto, created)"
+      ]
+    },
+    {
+      "name": "clientes",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'executivo')",
+        "view": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'executivo')",
+        "create": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && @request.auth.role = 'admin'",
+        "update": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && @request.auth.role = 'admin'",
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "nome",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate"
+          ]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_clientes_nome ON clientes (nome)"
+      ]
+    },
+    {
+      "name": "disciplinas",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now",
+        "view": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now",
+        "create": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && @request.auth.role = 'admin'",
+        "update": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && @request.auth.role = 'admin'",
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "nome",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "sigla",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "ativa",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate"
+          ]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_disciplinas_nome ON disciplinas (nome)"
+      ]
+    },
+    {
+      "name": "projeto_disciplinas",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'executivo' || projeto.coordenador = @request.auth.id || projeto.membros.id ?= @request.auth.id)",
+        "view": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'executivo' || projeto.coordenador = @request.auth.id || projeto.membros.id ?= @request.auth.id)",
+        "create": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || (@request.auth.role = 'coordenador' && @request.body.projeto.coordenador = @request.auth.id))",
+        "update": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || (@request.auth.role = 'coordenador' && projeto.coordenador = @request.auth.id && (@request.body.projeto:isset = false || @request.body.projeto = projeto)))",
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "projeto",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "projetos"
+        },
+        {
+          "name": "disciplina",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "disciplinas"
+        },
+        {
+          "name": "responsavel",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate"
+          ]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_projeto_disciplinas_unica ON projeto_disciplinas (projeto, disciplina)",
+        "CREATE INDEX idx_projeto_disciplinas_resp ON projeto_disciplinas (responsavel)"
       ]
     }
   ]
