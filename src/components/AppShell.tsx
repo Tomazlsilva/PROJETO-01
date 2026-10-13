@@ -12,6 +12,9 @@ import {
   Workflow,
   AlertTriangle,
   BarChart3,
+  Gauge,
+  History,
+  DatabaseBackup,
 } from 'lucide-react'
 import { TimerTopo } from '@/components/TimerTopo'
 import { Button } from '@/components/ui/button'
@@ -77,8 +80,18 @@ export default function AppShell({ roles, largo }: AppShellProps) {
               </NavLink>
             )}
             {veBaseline && (
+              <NavLink to="/painel" className={navClass}>
+                <Gauge className="w-4 h-4" /> Painel
+              </NavLink>
+            )}
+            {veBaseline && (
               <NavLink to="/baseline" className={navClass}>
                 <BarChart3 className="w-4 h-4" /> Baseline
+              </NavLink>
+            )}
+            {veFalhas && (
+              <NavLink to="/mudancas" className={navClass}>
+                <History className="w-4 h-4" /> Mudanças
               </NavLink>
             )}
             {isAdmin && (
@@ -91,6 +104,9 @@ export default function AppShell({ roles, largo }: AppShellProps) {
                 </NavLink>
                 <NavLink to="/admin/auditoria" className={navClass}>
                   <ScrollText className="w-4 h-4" /> Auditoria
+                </NavLink>
+                <NavLink to="/admin/backups" className={navClass}>
+                  <DatabaseBackup className="w-4 h-4" /> Backups
                 </NavLink>
               </>
             )}
@@ -136,8 +152,18 @@ export default function AppShell({ roles, largo }: AppShellProps) {
           </NavLink>
         )}
         {veBaseline && (
+          <NavLink to="/painel" className={navClass}>
+            Painel
+          </NavLink>
+        )}
+        {veBaseline && (
           <NavLink to="/baseline" className={navClass}>
             Baseline
+          </NavLink>
+        )}
+        {veFalhas && (
+          <NavLink to="/mudancas" className={navClass}>
+            Mudanças
           </NavLink>
         )}
         {isAdmin && (
@@ -150,6 +176,9 @@ export default function AppShell({ roles, largo }: AppShellProps) {
             </NavLink>
             <NavLink to="/admin/auditoria" className={navClass}>
               Auditoria
+            </NavLink>
+            <NavLink to="/admin/backups" className={navClass}>
+              Backups
             </NavLink>
           </>
         )}

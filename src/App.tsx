@@ -16,6 +16,9 @@ import Kanban from './pages/Kanban'
 import Fila from './pages/Fila'
 import Falhas from './pages/Falhas'
 import Baseline from './pages/Baseline'
+import Painel from './pages/Painel'
+import Mudancas from './pages/Mudancas'
+import Backups from './pages/admin/Backups'
 import Layout from './components/Layout'
 import AppShell from './components/AppShell'
 
@@ -42,14 +45,17 @@ const App = () => (
           </Route>
           <Route element={<AppShell roles={['admin', 'coordenador']} />}>
             <Route path="/falhas" element={<Falhas />} />
+            <Route path="/mudancas" element={<Mudancas />} />
           </Route>
           <Route element={<AppShell roles={['admin', 'coordenador', 'executivo']} />}>
             <Route path="/baseline" element={<Baseline />} />
+            <Route path="/painel" element={<Painel />} />
           </Route>
           <Route element={<AppShell roles={['admin']} />}>
             <Route path="/admin/usuarios" element={<Usuarios />} />
             <Route path="/admin/auditoria" element={<Auditoria />} />
             <Route path="/admin/fluxo" element={<Fluxo />} />
+            <Route path="/admin/backups" element={<Backups />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES MUST BE ADDED HERE */}
         </Route>
