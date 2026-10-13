@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-13T13:35:04.314Z",
+  "generatedAt": "2026-10-13T13:49:12.888Z",
   "collections": [
     {
       "name": "users",
@@ -411,6 +411,19 @@
             "onCreate",
             "onUpdate"
           ]
+        },
+        {
+          "name": "personalizada",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "criada_por",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
         }
       ],
       "indexes": [

@@ -2,6 +2,7 @@
 // Valida campos mínimos, cria cliente/projeto/disciplinas numa única transação,
 // alerta possível duplicidade antes de salvar (409) e registra o histórico.
 // Só administrador ou coordenador (como coordenador do próprio projeto) cria.
+// Emenda 13/10: aceita disciplina personalizada por nome livre.
 routerAdd(
   'POST',
   '/backend/v1/projetos',
@@ -158,25 +159,52 @@ routerAdd(
     if (lista.length === 0) erro('disciplinas', 'obrigatorio', 'Inclua ao menos uma disciplina.')
     else if (lista.length > 20) erro('disciplinas', 'demais', 'Máximo de 20 disciplinas.')
     const vistas = {}
+    const catalogo = $app.findRecordsByFilter('disciplinas', "id != ''", 'nome', 0, 0)
     for (let i = 0; i < lista.length && i < 20; i++) {
       const item = lista[i] || {}
+      // Disciplina do catálogo (id) ou personalizada (nome livre)
       let d = null
-      try {
-        d = $app.findRecordById('disciplinas', String(item.disciplina || ''))
-      } catch (_) {}
-      if (!d || !d.getBool('ativa')) {
-        erro('disciplinas', 'invalida', 'Disciplina inválida.')
+      let novoNome = ''
+      if (item.disciplina) {
+        try {
+          d = $app.findRecordById('disciplinas', String(item.disciplina))
+        } catch (_) {}
+        if (!d || !d.getBool('ativa')) {
+          erro('disciplinas', 'invalida', 'Disciplina inválida.')
+          continue
+        }
+      } else {
+        const livre =
+          typeof item.disciplina_nome === 'string'
+            ? item.disciplina_nome.trim().replace(/\s+/g, ' ')
+            : ''
+        if (livre.length < 2) {
+          erro(
+            'disciplinas',
+            'invalida',
+            'Escolha uma disciplina ou digite o nome da disciplina personalizada.',
+          )
+          continue
+        }
+        if (livre.length > 80) {
+          erro('disciplinas', 'muito_longo', 'Nome de disciplina muito longo (máximo 80).')
+          continue
+        }
+        for (const c of catalogo) {
+          if (norm(c.getString('nome')) === norm(livre)) {
+            d = c
+            break
+          }
+        }
+        if (!d) novoNome = livre
+      }
+      const chave = d ? d.id : 'novo:' + norm(novoNome)
+      const rotulo = d ? d.getString('nome') : novoNome
+      if (vistas[chave]) {
+        erro('disciplinas', 'repetida', 'A disciplina ' + rotulo + ' aparece mais de uma vez.')
         continue
       }
-      if (vistas[d.id]) {
-        erro(
-          'disciplinas',
-          'repetida',
-          'A disciplina ' + d.getString('nome') + ' aparece mais de uma vez.',
-        )
-        continue
-      }
-      vistas[d.id] = true
+      vistas[chave] = true
       let resp = item.responsavel ? String(item.responsavel) : ''
       if (resp) {
         let u = null
@@ -184,15 +212,11 @@ routerAdd(
           u = $app.findRecordById('users', resp)
         } catch (_) {}
         if (!u || !u.getBool('active')) {
-          erro(
-            'disciplinas',
-            'responsavel_invalido',
-            'Responsável inválido em ' + d.getString('nome') + '.',
-          )
+          erro('disciplinas', 'responsavel_invalido', 'Responsável inválido em ' + rotulo + '.')
           continue
         }
       }
-      disciplinas.push({ id: d.id, responsavel: resp })
+      disciplinas.push({ id: d ? d.id : '', novoNome: novoNome, responsavel: resp })
     }
 
     if (Object.keys(erros).length > 0) {
@@ -256,6 +280,27 @@ routerAdd(
       p.set('membros', membros)
       p.set('arquivado', false)
       tx.save(p)
+      // Disciplinas personalizadas entram no catálogo (reaproveitadas depois pelo nome)
+      const colDisc = tx.findCollectionByNameOrId('disciplinas')
+      for (const d of disciplinas) {
+        if (d.id) continue
+        const existentes = tx.findRecordsByFilter('disciplinas', "id != ''", '', 0, 0)
+        for (const c of existentes) {
+          if (norm(c.getString('nome')) === norm(d.novoNome)) {
+            d.id = c.id
+            break
+          }
+        }
+        if (!d.id) {
+          const nd = new Record(colDisc)
+          nd.set('nome', d.novoNome)
+          nd.set('ativa', true)
+          nd.set('personalizada', true)
+          nd.set('criada_por', auth.id)
+          tx.save(nd)
+          d.id = nd.id
+        }
+      }
       const colPD = tx.findCollectionByNameOrId('projeto_disciplinas')
       for (const d of disciplinas) {
         const r = new Record(colPD)

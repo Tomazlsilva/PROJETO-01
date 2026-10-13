@@ -62,6 +62,7 @@ import {
 } from '@/services/projetos'
 
 const HERDAR = '__herdar__'
+const OUTRA = '__outra__'
 
 const ACAO: Record<string, string> = {
   criado: 'Projeto criado',
@@ -271,7 +272,14 @@ export default function ProjetoDetalhe() {
         <ul className="divide-y divide-slate-100">
           {p.detalhe.disciplinas.map((d) => (
             <li key={d.id} className="py-3 flex flex-wrap items-center justify-between gap-3">
-              <span className="font-medium text-slate-800">{d.disciplina.nome}</span>
+              <span className="font-medium text-slate-800">
+                {d.disciplina.nome}
+                {d.disciplina.personalizada && (
+                  <span className="ml-2 text-xs font-normal px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
+                    personalizada
+                  </span>
+                )}
+              </span>
               {editavel ? (
                 <div className="w-full sm:w-72">
                   <Select
@@ -654,16 +662,19 @@ function IncluirDialog({
   pessoas: PessoaAtribuivel[]
   nomeCoordenador: string
   onClose: () => void
-  onConfirm: (disciplina: string, responsavel: string) => void
+  onConfirm: (disciplina: string | { nome: string }, responsavel: string) => void
 }) {
   const [disc, setDisc] = useState('')
+  const [livre, setLivre] = useState('')
   const [resp, setResp] = useState(HERDAR)
   useEffect(() => {
     if (aberto) {
       setDisc('')
+      setLivre('')
       setResp(HERDAR)
     }
   }, [aberto])
+  const pronto = disc === OUTRA ? livre.trim().length >= 2 : !!disc
   return (
     <Dialog open={aberto} onOpenChange={(o) => !o && onClose()}>
       <DialogContent>
@@ -671,9 +682,7 @@ function IncluirDialog({
           <DialogTitle>Incluir disciplina</DialogTitle>
           <DialogDescription>Escolha a disciplina e o responsável.</DialogDescription>
         </DialogHeader>
-        {catalogo.length === 0 ? (
-          <p className="text-sm text-slate-500">Todas as disciplinas ativas já estão no projeto.</p>
-        ) : (
+        {
           <div className="space-y-3">
             <Select value={disc || undefined} onValueChange={setDisc}>
               <SelectTrigger>
@@ -685,8 +694,18 @@ function IncluirDialog({
                     {c.nome}
                   </SelectItem>
                 ))}
+                <SelectItem value={OUTRA}>Outra (digitar)…</SelectItem>
               </SelectContent>
             </Select>
+            {disc === OUTRA && (
+              <Input
+                placeholder="Nome da disciplina"
+                value={livre}
+                maxLength={80}
+                autoFocus
+                onChange={(e) => setLivre(e.target.value)}
+              />
+            )}
             <Select value={resp} onValueChange={setResp}>
               <SelectTrigger>
                 <SelectValue />
@@ -701,14 +720,16 @@ function IncluirDialog({
               </SelectContent>
             </Select>
           </div>
-        )}
+        }
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
             Cancelar
           </Button>
           <Button
-            disabled={!disc}
-            onClick={() => onConfirm(disc, resp === HERDAR ? '' : resp)}
+            disabled={!pronto}
+            onClick={() =>
+              onConfirm(disc === OUTRA ? { nome: livre.trim() } : disc, resp === HERDAR ? '' : resp)
+            }
             className="bg-[#1E3A8A] hover:bg-[#1E2A6B]"
           >
             Incluir

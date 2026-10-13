@@ -24,7 +24,7 @@ export interface Pessoa {
 
 export interface DisciplinaDoProjeto {
   id: string
-  disciplina: { id: string; nome: string; sigla: string }
+  disciplina: { id: string; nome: string; sigla: string; personalizada?: boolean }
   responsavel: Pessoa | null
   herdado: boolean
 }
@@ -90,7 +90,7 @@ export interface NovoProjeto {
   prioridade: Prioridade
   link_entrada?: string
   coordenador?: string
-  disciplinas: { disciplina: string; responsavel?: string }[]
+  disciplinas: { disciplina?: string; disciplina_nome?: string; responsavel?: string }[]
   confirmar_duplicidade?: boolean
 }
 
@@ -155,10 +155,18 @@ export const arquivarProjeto = (id: string, motivo: string) =>
 export const restaurarProjeto = (id: string) =>
   pb.send(`/backend/v1/projetos/${encodeURIComponent(id)}/restaurar`, { method: 'POST', body: {} })
 
-export const incluirDisciplina = (id: string, disciplina: string, responsavel?: string) =>
+// disciplina: id do catálogo ou { nome } para disciplina personalizada
+export const incluirDisciplina = (
+  id: string,
+  disciplina: string | { nome: string },
+  responsavel?: string,
+) =>
   pb.send(`/backend/v1/projetos/${encodeURIComponent(id)}/disciplinas`, {
     method: 'POST',
-    body: { disciplina, responsavel: responsavel || '' },
+    body: {
+      ...(typeof disciplina === 'string' ? { disciplina } : { disciplina_nome: disciplina.nome }),
+      responsavel: responsavel || '',
+    },
   })
 
 export const trocarResponsavel = (id: string, pdId: string, responsavel: string) =>

@@ -64,7 +64,12 @@ routerAdd(
         let d = { id: r.getString('disciplina'), nome: '—', sigla: '' }
         try {
           const dr = $app.findRecordById('disciplinas', r.getString('disciplina'))
-          d = { id: dr.id, nome: dr.getString('nome'), sigla: dr.getString('sigla') }
+          d = {
+            id: dr.id,
+            nome: dr.getString('nome'),
+            sigla: dr.getString('sigla'),
+            personalizada: dr.getBool('personalizada'),
+          }
         } catch (_) {}
         return {
           id: r.id,

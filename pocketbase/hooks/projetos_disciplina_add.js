@@ -1,5 +1,6 @@
 // SPEC-1-002 — inclui disciplina em projeto existente, com responsável próprio
 // ou herdado do coordenador (explícito), registrando no histórico.
+// Aceita disciplina do catálogo (id) ou personalizada (nome livre, emenda 13/10).
 routerAdd(
   'POST',
   '/backend/v1/projetos/{id}/disciplinas',
@@ -56,30 +57,59 @@ routerAdd(
     }
 
     const body = info.body || {}
-    let d = null
-    try {
-      d = $app.findRecordById('disciplinas', String(body.disciplina || ''))
-    } catch (_) {}
-    if (!d || !d.getBool('ativa')) {
+    const norm = (v) => {
+      let x = String(v || '').toLowerCase()
+      try {
+        x = x.normalize('NFD').replace(/[̀-ͯ]/g, '')
+      } catch (_) {}
+      return x.replace(/[^a-z0-9]+/g, ' ').trim()
+    }
+    const invalida = (msg) => {
       throw new BadRequestError('Revise os campos destacados.', {
-        disciplina: new ValidationError('invalida', 'Disciplina inválida.'),
+        disciplina: new ValidationError('invalida', msg),
       })
     }
-    const ja = $app.findRecordsByFilter(
-      'projeto_disciplinas',
-      'projeto = {:p} && disciplina = {:d}',
-      '',
-      1,
-      0,
-      {
-        p: id,
-        d: d.id,
-      },
-    )
-    if (ja.length > 0) {
-      throw new BadRequestError('Revise os campos destacados.', {
-        disciplina: new ValidationError('repetida', 'A disciplina já está no projeto.'),
-      })
+    // Disciplina do catálogo (id) ou personalizada (nome livre)
+    let d = null
+    let novoNome = ''
+    if (body.disciplina) {
+      try {
+        d = $app.findRecordById('disciplinas', String(body.disciplina))
+      } catch (_) {}
+      if (!d || !d.getBool('ativa')) invalida('Disciplina inválida.')
+    } else {
+      const livre =
+        typeof body.disciplina_nome === 'string'
+          ? body.disciplina_nome.trim().replace(/\s+/g, ' ')
+          : ''
+      if (livre.length < 2)
+        invalida('Escolha uma disciplina ou digite o nome da disciplina personalizada.')
+      if (livre.length > 80) invalida('Nome de disciplina muito longo (máximo 80).')
+      for (const c of $app.findRecordsByFilter('disciplinas', "id != ''", '', 0, 0)) {
+        if (norm(c.getString('nome')) === norm(livre)) {
+          d = c
+          break
+        }
+      }
+      if (!d) novoNome = livre
+    }
+    if (d) {
+      const ja = $app.findRecordsByFilter(
+        'projeto_disciplinas',
+        'projeto = {:p} && disciplina = {:d}',
+        '',
+        1,
+        0,
+        {
+          p: id,
+          d: d.id,
+        },
+      )
+      if (ja.length > 0) {
+        throw new BadRequestError('Revise os campos destacados.', {
+          disciplina: new ValidationError('repetida', 'A disciplina já está no projeto.'),
+        })
+      }
     }
     const coordId = projeto.getString('coordenador')
     let resp = body.responsavel ? String(body.responsavel) : ''
@@ -98,10 +128,21 @@ routerAdd(
     }
 
     let novoId = ''
+    let discId = d ? d.id : ''
+    let discNome = d ? d.getString('nome') : novoNome
     $app.runInTransaction((tx) => {
+      if (!discId) {
+        const nd = new Record(tx.findCollectionByNameOrId('disciplinas'))
+        nd.set('nome', novoNome)
+        nd.set('ativa', true)
+        nd.set('personalizada', true)
+        nd.set('criada_por', auth.id)
+        tx.save(nd)
+        discId = nd.id
+      }
       const r = new Record(tx.findCollectionByNameOrId('projeto_disciplinas'))
       r.set('projeto', id)
-      r.set('disciplina', d.id)
+      r.set('disciplina', discId)
       r.set('responsavel', resp || coordId)
       r.set('responsavel_herdado', !resp)
       tx.save(r)
@@ -122,7 +163,10 @@ routerAdd(
       h.set('campo', 'disciplina')
       h.set(
         'depois',
-        d.getString('nome') + ' — ' + (resp ? respNome : 'responsável herdado do coordenador'),
+        discNome +
+          (d ? '' : ' (personalizada)') +
+          ' — ' +
+          (resp ? respNome : 'responsável herdado do coordenador'),
       )
       tx.save(h)
     })

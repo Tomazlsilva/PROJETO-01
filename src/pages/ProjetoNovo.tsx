@@ -40,10 +40,12 @@ import {
 
 const NOVO_CLIENTE = '__novo__'
 const HERDAR = '__herdar__'
+const OUTRA = '__outra__'
 
 interface LinhaDisciplina {
   chave: number
   disciplina: string
+  livre: string
   responsavel: string
 }
 
@@ -66,7 +68,7 @@ export default function ProjetoNovo() {
   const [link, setLink] = useState('')
   const [coordenador, setCoordenador] = useState(user?.id ?? '')
   const [linhas, setLinhas] = useState<LinhaDisciplina[]>([
-    { chave: 1, disciplina: '', responsavel: HERDAR },
+    { chave: 1, disciplina: '', livre: '', responsavel: HERDAR },
   ])
   const [erros, setErros] = useState<Record<string, string>>({})
   const [salvando, setSalvando] = useState(false)
@@ -106,7 +108,7 @@ export default function ProjetoNovo() {
     disciplinas: linhas
       .filter((l) => l.disciplina)
       .map((l) => ({
-        disciplina: l.disciplina,
+        ...(l.disciplina === OUTRA ? { disciplina_nome: l.livre } : { disciplina: l.disciplina }),
         ...(l.responsavel && l.responsavel !== HERDAR ? { responsavel: l.responsavel } : {}),
       })),
     confirmar_duplicidade: confirmar,
@@ -313,8 +315,25 @@ export default function ProjetoNovo() {
                       {d.nome}
                     </SelectItem>
                   ))}
+                  <SelectItem value={OUTRA}>Outra (digitar)…</SelectItem>
                 </SelectContent>
               </Select>
+              {l.disciplina === OUTRA && (
+                <Input
+                  className={`sm:w-56 ${campoCls('disciplinas')}`}
+                  placeholder="Nome da disciplina"
+                  value={l.livre}
+                  maxLength={80}
+                  autoFocus
+                  onChange={(e) =>
+                    setLinhas(
+                      linhas.map((x) =>
+                        x.chave === l.chave ? { ...x, livre: e.target.value } : x,
+                      ),
+                    )
+                  }
+                />
+              )}
               <Select
                 value={l.responsavel}
                 onValueChange={(v) =>
@@ -347,13 +366,20 @@ export default function ProjetoNovo() {
             </div>
           ))}
           <Erro campo="disciplinas" />
+          <p className="text-xs text-slate-500">
+            Não encontrou a disciplina? Escolha “Outra (digitar)…”. Ela fica disponível para os
+            próximos projetos.
+          </p>
           <Button
             type="button"
             variant="outline"
             size="sm"
             className="gap-1"
             onClick={() =>
-              setLinhas([...linhas, { chave: Date.now(), disciplina: '', responsavel: HERDAR }])
+              setLinhas([
+                ...linhas,
+                { chave: Date.now(), disciplina: '', livre: '', responsavel: HERDAR },
+              ])
             }
           >
             <Plus className="w-4 h-4" /> Disciplina
