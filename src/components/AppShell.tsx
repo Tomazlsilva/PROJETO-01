@@ -11,7 +11,9 @@ import {
   ListTodo,
   Workflow,
   AlertTriangle,
+  BarChart3,
 } from 'lucide-react'
+import { TimerTopo } from '@/components/TimerTopo'
 import { Button } from '@/components/ui/button'
 import { CmxLogo } from '@/components/CmxLogo'
 import { Notificacoes } from '@/components/Notificacoes'
@@ -44,6 +46,7 @@ export default function AppShell({ roles, largo }: AppShellProps) {
 
   const allowed = !roles || (role !== null && roles.includes(role))
   const veFalhas = role === 'admin' || role === 'coordenador'
+  const veBaseline = veFalhas || role === 'executivo'
   const userName = (user?.name as string) || (user?.email as string)?.split('@')[0] || 'Usuário'
 
   const navClass = ({ isActive }: { isActive: boolean }) =>
@@ -73,6 +76,11 @@ export default function AppShell({ roles, largo }: AppShellProps) {
                 <AlertTriangle className="w-4 h-4" /> Falhas
               </NavLink>
             )}
+            {veBaseline && (
+              <NavLink to="/baseline" className={navClass}>
+                <BarChart3 className="w-4 h-4" /> Baseline
+              </NavLink>
+            )}
             {isAdmin && (
               <>
                 <NavLink to="/admin/usuarios" className={navClass}>
@@ -89,6 +97,7 @@ export default function AppShell({ roles, largo }: AppShellProps) {
           </nav>
         </div>
         <div className="flex items-center gap-3">
+          <TimerTopo />
           <Notificacoes />
           <div className="hidden sm:block text-right">
             <div className="text-sm font-semibold text-slate-800 leading-tight">{userName}</div>
@@ -124,6 +133,11 @@ export default function AppShell({ roles, largo }: AppShellProps) {
         {veFalhas && (
           <NavLink to="/falhas" className={navClass}>
             Falhas
+          </NavLink>
+        )}
+        {veBaseline && (
+          <NavLink to="/baseline" className={navClass}>
+            Baseline
           </NavLink>
         )}
         {isAdmin && (

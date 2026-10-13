@@ -17,6 +17,7 @@ import {
   User,
 } from 'lucide-react'
 import { cancelarAtividade, devolverAtividade, receberAtividade } from '@/services/handoffs'
+import { TempoDoCard } from '@/components/TempoDoCard'
 import { toast } from 'sonner'
 import { ClientResponseError } from 'pocketbase'
 import { Button } from '@/components/ui/button'
@@ -1036,6 +1037,21 @@ function CardDialog({
                   </div>
                 </div>
               )}
+
+            <TempoDoCard
+              cardId={d.id}
+              etapa={d.etapa}
+              podeApontar={
+                !!ctx &&
+                ctx.role !== 'executivo' &&
+                !d.projeto.arquivado &&
+                (ctx.role === 'admin' ||
+                  ctx.coordenadorId === userId ||
+                  ctx.membros.includes(userId) ||
+                  ctx.responsavelId === userId ||
+                  d.revisor?.id === userId)
+              }
+            />
 
             <div className="space-y-2">
               <div className="flex items-center justify-between">

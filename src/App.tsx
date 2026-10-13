@@ -15,6 +15,7 @@ import Fluxo from './pages/admin/Fluxo'
 import Kanban from './pages/Kanban'
 import Fila from './pages/Fila'
 import Falhas from './pages/Falhas'
+import Baseline from './pages/Baseline'
 import Layout from './components/Layout'
 import AppShell from './components/AppShell'
 
@@ -41,6 +42,9 @@ const App = () => (
           </Route>
           <Route element={<AppShell roles={['admin', 'coordenador']} />}>
             <Route path="/falhas" element={<Falhas />} />
+          </Route>
+          <Route element={<AppShell roles={['admin', 'coordenador', 'executivo']} />}>
+            <Route path="/baseline" element={<Baseline />} />
           </Route>
           <Route element={<AppShell roles={['admin']} />}>
             <Route path="/admin/usuarios" element={<Usuarios />} />
