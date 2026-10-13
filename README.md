@@ -1,6 +1,6 @@
 # CMX - Gavazzi
 
-Sistema de Gestão de Projetos e Engenharia Gavazzi, desenvolvido na plataforma [Skip](https://goskip.dev).
+Sistema de Gestão de Projetos e Engenharia Gavazzi, desenvolvido na plataforma [Skip](https://goskip.dev/).
 
 ## 🚀 Stack Tecnológica
 
