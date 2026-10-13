@@ -1,23 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import {
-  Mail,
-  Lock,
-  Eye,
-  EyeOff,
-  Loader2,
-  AlertCircle,
-  TrendingUp,
-  ShieldCheck,
-  Zap,
-  ArrowRight,
-} from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff, Loader2, AlertCircle, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useAuth, SESSION_ENDED_KEY } from '@/contexts/AuthContext'
 import { CmxLogo } from '@/components/CmxLogo'
+import { LOGO_GAVAZZI } from '@/assets/marcaGavazzi'
 import { ForgotPasswordModal } from '@/components/ForgotPasswordModal'
 
 const REMEMBER_EMAIL_KEY = 'cmx_remember_email'
@@ -205,15 +195,15 @@ export default function Index() {
   return (
     <div className="min-h-screen w-full flex flex-col lg:flex-row bg-[#F5F7FA] text-slate-800">
       {/* ============================================================== */}
-      {/* COLUNA ESQUERDA — PAINEL DE MARCA CRM (Escuro #0F172A)           */}
+      {/* COLUNA ESQUERDA — MARCA GAVAZZI (azul da marca #284480)          */}
       {/* ============================================================== */}
-      <div className="hidden lg:flex lg:w-[48%] xl:w-[50%] bg-[#0F172A] text-white flex-col justify-between p-12 xl:p-16 relative overflow-hidden select-none">
+      <div className="hidden lg:flex lg:w-[48%] xl:w-[50%] bg-[linear-gradient(160deg,#284480_0%,#1F3768_45%,#172A52_100%)] text-white flex-col justify-between p-12 xl:p-16 relative overflow-hidden select-none">
         {/* Elementos visuais decorativos de fundo */}
-        <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-blue-600/15 blur-3xl pointer-events-none" />
-        <div className="absolute top-1/2 -right-32 w-96 h-96 rounded-full bg-indigo-600/15 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-32 left-1/3 w-80 h-80 rounded-full bg-sky-500/10 blur-2xl pointer-events-none" />
+        <div className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-white/[0.06] blur-3xl pointer-events-none" />
+        <div className="absolute top-1/2 -right-32 w-96 h-96 rounded-full bg-white/5 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-32 left-1/3 w-80 h-80 rounded-full bg-white/[0.04] blur-2xl pointer-events-none" />
 
-        {/* Linhas de grid sutil para reforçar estética técnica/CRM */}
+        {/* Linhas de grid sutil (estética técnica) */}
         <div
           className="absolute inset-0 opacity-[0.03] pointer-events-none"
           style={{
@@ -223,75 +213,24 @@ export default function Index() {
           }}
         />
 
-        {/* Topo: Logo CMX */}
-        <div className="relative z-10">
-          <CmxLogo variant="dark" size="lg" />
-        </div>
-
-        {/* Centro: Headline e Propostas de Valor do CRM */}
-        <div className="relative z-10 my-auto py-12 max-w-lg space-y-8">
-          <div className="space-y-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/15 text-blue-300 text-xs font-semibold tracking-wide border border-blue-400/25">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              Gavazzi Engenharia · Produção técnica
-            </div>
-            <h1 className="text-3xl xl:text-4xl font-extrabold tracking-[-0.03em] leading-tight text-white">
-              Central de Gestão da Produção Técnica.
-            </h1>
-            <p className="text-slate-400 text-base leading-relaxed">
-              Projetos, etapas, responsáveis e prazos de todas as disciplinas em um só lugar, com o
-              histórico de cada passo.
-            </p>
+        {/* Centro: só o logo, em cartão branco, e a identificação do sistema */}
+        <div className="relative z-10 flex-1 flex flex-col items-center justify-center gap-7">
+          <div className="bg-white rounded-[28px] px-10 py-8 shadow-[0_20px_50px_rgba(0,0,0,0.35)] ring-1 ring-white/30">
+            <img
+              src={LOGO_GAVAZZI}
+              alt="Gavazzi Engenharia"
+              className="h-[280px] xl:h-[395px] w-auto"
+            />
           </div>
-
-          {/* Bullets com diferenciais de CRM */}
-          <div className="space-y-4 pt-2">
-            <div className="flex items-start gap-3.5">
-              <div className="w-9 h-9 rounded-lg bg-blue-500/10 border border-blue-400/20 flex items-center justify-center shrink-0 mt-0.5">
-                <TrendingUp className="w-5 h-5 text-blue-400" />
-              </div>
-              <div>
-                <h2 className="text-sm font-semibold text-white">
-                  Projetos e disciplinas em um só lugar
-                </h2>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Cliente, prazo, prioridade e responsável de cada disciplina, do cadastro à
-                  emissão.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3.5">
-              <div className="w-9 h-9 rounded-lg bg-blue-500/10 border border-blue-400/20 flex items-center justify-center shrink-0 mt-0.5">
-                <Zap className="w-5 h-5 text-blue-400" />
-              </div>
-              <div>
-                <h2 className="text-sm font-semibold text-white">Passagem entre disciplinas</h2>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Cada etapa concluída chega ao próximo responsável, com histórico de quem fez o
-                  quê.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3.5">
-              <div className="w-9 h-9 rounded-lg bg-blue-500/10 border border-blue-400/20 flex items-center justify-center shrink-0 mt-0.5">
-                <ShieldCheck className="w-5 h-5 text-blue-400" />
-              </div>
-              <div>
-                <h2 className="text-sm font-semibold text-white">Acesso com a conta da empresa</h2>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Cada pessoa vê só o que o seu papel permite, com auditoria de todos os acessos.
-                </p>
-              </div>
-            </div>
-          </div>
+          <p className="text-white/85 text-[17px] tracking-[0.02em]">
+            Central de Gestão da Produção Técnica
+          </p>
         </div>
 
         {/* Rodapé da coluna esquerda */}
-        <div className="relative z-10 pt-6 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-500">
+        <div className="relative z-10 pt-6 border-t border-white/15 flex items-center justify-between text-xs text-white/60">
           <span>&copy; {new Date().getFullYear()} Gavazzi Engenharia</span>
-          <span className="text-[11px] text-slate-400">Central Gavazzi</span>
+          <span className="text-[11px]">Central Gavazzi</span>
         </div>
       </div>
 
@@ -391,7 +330,7 @@ export default function Index() {
                     if (serverError) setServerError(null)
                   }}
                   onBlur={handleEmailBlur}
-                  placeholder="voce@empresa.com.br"
+                  placeholder="voce@gavazziengenharia.com.br"
                   autoComplete="email"
                   required
                   disabled={isSubmitting}
@@ -413,7 +352,7 @@ export default function Index() {
             {/* Campo Senha */}
             <div className="space-y-1.5">
               <Label htmlFor="login-password" className="text-sm font-semibold text-slate-700">
-                Senha (mínimo de 8 caracteres)
+                Senha
               </Label>
               <div className="relative">
                 <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
