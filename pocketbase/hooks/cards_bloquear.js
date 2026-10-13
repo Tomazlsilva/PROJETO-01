@@ -95,10 +95,22 @@ routerAdd(
     $app.runInTransaction((tx) => {
       const c = tx.findRecordById('projeto_disciplinas', id)
       const p = tx.findRecordById('projetos', c.getString('projeto'))
-      if (p.getBool('arquivado')) return (situacao = 'arquivado')
-      if (c.getString('updated') !== body.versao) return (situacao = 'conflito')
-      if (c.getBool('bloqueado')) return (situacao = 'ja_bloqueado')
-      if (c.getString('etapa') === 'aprovado') return (situacao = 'aprovado')
+      if (p.getBool('arquivado')) {
+        situacao = 'arquivado'
+        return
+      }
+      if (c.getString('updated') !== body.versao) {
+        situacao = 'conflito'
+        return
+      }
+      if (c.getBool('bloqueado')) {
+        situacao = 'ja_bloqueado'
+        return
+      }
+      if (c.getString('etapa') === 'aprovado') {
+        situacao = 'aprovado'
+        return
+      }
       c.set('bloqueado', true)
       c.set('bloqueio_motivo', motivo)
       c.set('bloqueio_dono', dono.id)

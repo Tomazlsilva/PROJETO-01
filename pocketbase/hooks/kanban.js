@@ -1,7 +1,8 @@
 // SPEC-1-003 (T1.12) — quadro Kanban: etapas ativas do fluxo vigente (em ordem)
 // e os cards visíveis ao usuário em projetos não arquivados.
 // Filtros: projeto, responsavel (eu | id), disciplina, prioridade.
-// Ordem determinística: prioridade (Urgente→Baixa), prazo do projeto, criação, id.
+// Ordem determinística: bloqueio vencido, prioridade (Urgente→Baixa), prazo, criação, id.
+// Prioridade e prazo do card prevalecem sobre os do projeto (SPEC-1-004).
 routerAdd(
   'GET',
   '/backend/v1/kanban',
@@ -50,10 +51,7 @@ routerAdd(
       filtros.push('disciplina = {:d}')
       params.d = fDisc
     }
-    if (fPrio) {
-      filtros.push('projeto.prioridade = {:pr}')
-      params.pr = fPrio
-    }
+
     const registros = $app.findRecordsByFilter(
       'projeto_disciplinas',
       filtros.join(' && '),
@@ -113,12 +111,20 @@ routerAdd(
     }
 
     const PESO = { Urgente: 0, Alta: 1, Normal: 2, Baixa: 3 }
+    const hoje = new Date(Date.now() - 3 * 3600000).toISOString().slice(0, 10)
     const cards = []
     for (const c of registros) {
       const p = projetoDe(c.getString('projeto'))
       if (!p) continue
       const bloqueado = c.getBool('bloqueado')
+      const prioridade = c.getString('prioridade') || p.prioridade
+      if (fPrio && prioridade !== fPrio) continue
+      const prazo = c.getString('prazo').slice(0, 10) || p.prazo
+      const revisao = c.getString('bloqueio_revisao').slice(0, 10)
       cards.push({
+        prioridade: prioridade,
+        prazo: prazo,
+        atrasado: !!prazo && prazo < hoje && c.getString('etapa') !== 'aprovado',
         id: c.id,
         etapa: c.getString('etapa'),
         bloqueado: bloqueado,
@@ -126,8 +132,9 @@ routerAdd(
           ? {
               motivo: c.getString('bloqueio_motivo'),
               dono: pessoa(c.getString('bloqueio_dono')),
-              revisao: c.getString('bloqueio_revisao').slice(0, 10),
+              revisao: revisao,
               desde: c.getString('bloqueado_em'),
+              vencido: !!revisao && revisao < hoje,
             }
           : null,
         projeto: {
@@ -146,11 +153,14 @@ routerAdd(
       })
     }
     cards.sort((a, b) => {
-      const pa = PESO[a.projeto.prioridade] === undefined ? 2 : PESO[a.projeto.prioridade]
-      const pb = PESO[b.projeto.prioridade] === undefined ? 2 : PESO[b.projeto.prioridade]
+      const va = a.bloqueio && a.bloqueio.vencido ? 0 : 1
+      const vb = b.bloqueio && b.bloqueio.vencido ? 0 : 1
+      if (va !== vb) return va - vb
+      const pa = PESO[a.prioridade] === undefined ? 2 : PESO[a.prioridade]
+      const pb = PESO[b.prioridade] === undefined ? 2 : PESO[b.prioridade]
       if (pa !== pb) return pa - pb
-      const za = a.projeto.prazo || '9999-99-99'
-      const zb = b.projeto.prazo || '9999-99-99'
+      const za = a.prazo || '9999-99-99'
+      const zb = b.prazo || '9999-99-99'
       if (za !== zb) return za < zb ? -1 : 1
       if (a.created !== b.created) return a.created < b.created ? -1 : 1
       return a.id < b.id ? -1 : a.id > b.id ? 1 : 0

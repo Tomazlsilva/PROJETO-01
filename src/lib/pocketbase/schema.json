@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-13T17:33:27.218Z",
+  "generatedAt": "2026-10-13T18:36:06.232Z",
   "collections": [
     {
       "name": "users",
@@ -29,21 +29,32 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         },
         {
           "name": "role",
           "type": "select",
           "required": false,
           "system": false,
-          "selectValues": ["admin", "coordenador", "projetista", "revisor", "executivo"]
+          "selectValues": [
+            "admin",
+            "coordenador",
+            "projetista",
+            "revisor",
+            "executivo"
+          ]
         },
         {
           "name": "active",
@@ -115,21 +126,30 @@
           "type": "select",
           "required": false,
           "system": false,
-          "selectValues": ["success", "failure", "blocked"]
+          "selectValues": [
+            "success",
+            "failure",
+            "blocked"
+          ]
         },
         {
           "name": "created",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         },
         {
           "name": "details",
@@ -179,14 +199,19 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         },
         {
           "name": "cliente",
@@ -218,7 +243,12 @@
           "type": "select",
           "required": false,
           "system": false,
-          "selectValues": ["Baixa", "Normal", "Alta", "Urgente"]
+          "selectValues": [
+            "Baixa",
+            "Normal",
+            "Alta",
+            "Urgente"
+          ]
         },
         {
           "name": "link_entrada",
@@ -274,17 +304,24 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         }
       ],
-      "indexes": ["CREATE INDEX idx_revisoes_projeto ON revisoes (projeto, created)"]
+      "indexes": [
+        "CREATE INDEX idx_revisoes_projeto ON revisoes (projeto, created)"
+      ]
     },
     {
       "name": "clientes",
@@ -308,17 +345,24 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         }
       ],
-      "indexes": ["CREATE INDEX idx_clientes_nome ON clientes (nome)"]
+      "indexes": [
+        "CREATE INDEX idx_clientes_nome ON clientes (nome)"
+      ]
     },
     {
       "name": "disciplinas",
@@ -354,14 +398,19 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         },
         {
           "name": "personalizada",
@@ -377,7 +426,9 @@
           "collectionRef": "users"
         }
       ],
-      "indexes": ["CREATE UNIQUE INDEX idx_disciplinas_nome ON disciplinas (nome)"]
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_disciplinas_nome ON disciplinas (nome)"
+      ]
     },
     {
       "name": "projeto_disciplinas",
@@ -416,14 +467,19 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         },
         {
           "name": "responsavel_herdado",
@@ -487,12 +543,31 @@
           "type": "url",
           "required": false,
           "system": false
+        },
+        {
+          "name": "prioridade",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": [
+            "Baixa",
+            "Normal",
+            "Alta",
+            "Urgente"
+          ]
+        },
+        {
+          "name": "prazo",
+          "type": "date",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": [
         "CREATE UNIQUE INDEX idx_projeto_disciplinas_unica ON projeto_disciplinas (projeto, disciplina)",
         "CREATE INDEX idx_projeto_disciplinas_resp ON projeto_disciplinas (responsavel)",
-        "CREATE INDEX `idx_projeto_disciplinas_etapa` ON `projeto_disciplinas` (etapa)"
+        "CREATE INDEX `idx_projeto_disciplinas_etapa` ON `projeto_disciplinas` (etapa)",
+        "CREATE INDEX `idx_projeto_disciplinas_bloqueio_dono` ON `projeto_disciplinas` (bloqueio_dono)"
       ]
     },
     {
@@ -555,14 +630,19 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         }
       ],
       "indexes": [
@@ -622,17 +702,24 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         }
       ],
-      "indexes": ["CREATE UNIQUE INDEX idx_fluxo_versoes_numero ON fluxo_versoes (numero)"]
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_fluxo_versoes_numero ON fluxo_versoes (numero)"
+      ]
     },
     {
       "name": "transicoes",
@@ -664,7 +751,15 @@
           "type": "select",
           "required": true,
           "system": false,
-          "selectValues": ["criacao", "transicao", "bloqueio", "desbloqueio", "remapeamento"]
+          "selectValues": [
+            "criacao",
+            "transicao",
+            "bloqueio",
+            "desbloqueio",
+            "remapeamento",
+            "alteracao",
+            "bloqueio_revisado"
+          ]
         },
         {
           "name": "de",
@@ -702,14 +797,19 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         }
       ],
       "indexes": [

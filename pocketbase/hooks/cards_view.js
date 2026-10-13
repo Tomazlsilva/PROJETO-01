@@ -72,6 +72,12 @@ routerAdd(
     } catch (_) {}
 
     const bloqueado = card.getBool('bloqueado')
+    const hoje = new Date(Date.now() - 3 * 3600000).toISOString().slice(0, 10)
+    const prioPropria = card.getString('prioridade')
+    const prazoProprio = card.getString('prazo').slice(0, 10)
+    const prazo = prazoProprio || projeto.getString('prazo').slice(0, 10)
+    const revisao = card.getString('bloqueio_revisao').slice(0, 10)
+    const papel = su ? 'admin' : auth.getString('role')
     const historico = $app
       .findRecordsByFilter('transicoes', 'card = {:c}', '-created', 1000, 0, { c: card.id })
       .map((t) => {
@@ -99,10 +105,19 @@ routerAdd(
         ? {
             motivo: card.getString('bloqueio_motivo'),
             dono: pessoa(card.getString('bloqueio_dono')),
-            revisao: card.getString('bloqueio_revisao').slice(0, 10),
+            revisao: revisao,
             desde: card.getString('bloqueado_em'),
+            vencido: !!revisao && revisao < hoje,
           }
         : null,
+      prioridade: prioPropria || projeto.getString('prioridade') || 'Normal',
+      prioridade_propria: !!prioPropria,
+      prazo: prazo,
+      prazo_proprio: !!prazoProprio,
+      atrasado: !!prazo && prazo < hoje && card.getString('etapa') !== 'aprovado',
+      pode_editar:
+        papel === 'admin' ||
+        (papel === 'coordenador' && projeto.getString('coordenador') === auth.id),
       observacao: card.getString('observacao'),
       link_entrega: card.getString('link_entrega'),
       updated: card.getString('updated'),
@@ -113,6 +128,8 @@ routerAdd(
         arquivado: projeto.getBool('arquivado'),
         coordenador: pessoa(projeto.getString('coordenador')),
         membros: projeto.getStringSlice('membros'),
+        prioridade: projeto.getString('prioridade') || 'Normal',
+        prazo: projeto.getString('prazo').slice(0, 10),
       },
       // pessoas do projeto (coordenador + membros ativos), para escolher o dono de um bloqueio
       equipe: [projeto.getString('coordenador')]

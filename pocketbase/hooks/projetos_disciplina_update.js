@@ -118,6 +118,27 @@ routerAdd(
       h.set('depois', nomeDe(depoisId) + (novo ? '' : ' (herdado)'))
       h.set('detalhes', { disciplina: disciplinaNome })
       tx.save(h)
+      // SPEC-1-004 (CA-1-004-06): a reatribuição também fica no histórico do card
+      const t = new Record(tx.findCollectionByNameOrId('transicoes'))
+      t.set('card', r.id)
+      t.set('projeto', id)
+      t.set('tipo', 'alteracao')
+      t.set('de', r.getString('etapa'))
+      t.set('para', r.getString('etapa'))
+      t.set('autor', auth.id)
+      t.set('detalhes', {
+        mudancas: [
+          {
+            campo: 'responsavel',
+            antes: nomeDe(antesId) + (antesHerdado ? ' (herdado)' : ''),
+            depois: nomeDe(depoisId) + (novo ? '' : ' (herdado)'),
+            antes_id: antesId,
+            depois_id: depoisId,
+          },
+        ],
+        origem: 'projeto',
+      })
+      tx.save(t)
     })
     return e.json(200, { id: pdId })
   },

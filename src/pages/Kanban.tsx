@@ -9,6 +9,7 @@ import {
   Link2,
   Loader2,
   Lock,
+  Pencil,
   RefreshCw,
   Unlock,
   User,
@@ -50,11 +51,13 @@ import {
   type Etapa,
 } from '@/lib/fluxo'
 import {
+  atualizarCard,
   bloquearCard,
   desbloquearCard,
   getCard,
   getQuadro,
   moverCard,
+  revisarBloqueio,
   type CardDetalhe,
   type CardKanban,
   type Quadro,
@@ -63,7 +66,9 @@ import {
   PRIORIDADES,
   formatarData,
   hojeBR,
+  listAtribuiveis,
   listMeusProjetos,
+  type PessoaAtribuivel,
   type Projeto,
 } from '@/services/projetos'
 
@@ -132,6 +137,17 @@ export default function Kanban() {
       .then(setProjetos)
       .catch(() => setProjetos([]))
   }, [])
+
+  // /kanban?card=<id> (vindo da fila) abre o card direto
+  useEffect(() => {
+    const c = params.get('card')
+    if (c && quadro) {
+      setAberto(c)
+      const p = new URLSearchParams(params)
+      p.delete('card')
+      setParams(p, { replace: true })
+    }
+  }, [params, quadro, setParams])
 
   const ativas = useMemo(() => new Set(quadro?.etapas.map((e) => e.chave) ?? []), [quadro])
   const nomeEtapa = useCallback(
@@ -477,10 +493,10 @@ function CartaoCard({
         </span>
         <span
           className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border whitespace-nowrap ${
-            COR_PRIORIDADE[card.projeto.prioridade] ?? COR_PRIORIDADE.Normal
+            COR_PRIORIDADE[card.prioridade] ?? COR_PRIORIDADE.Normal
           }`}
         >
-          {card.projeto.prioridade}
+          {card.prioridade}
         </span>
       </div>
       <p className="text-xs text-slate-500 mt-0.5 truncate">{card.projeto.nome}</p>
@@ -488,9 +504,12 @@ function CartaoCard({
         <span className="flex items-center gap-1 truncate">
           <User className="w-3 h-3 shrink-0" /> {card.responsavel?.nome ?? '—'}
         </span>
-        <span className="flex items-center gap-1 whitespace-nowrap">
+        <span
+          className={`flex items-center gap-1 whitespace-nowrap ${card.atrasado ? 'text-red-600 font-semibold' : ''}`}
+          title={card.atrasado ? 'Prazo vencido' : 'Prazo'}
+        >
           {card.tem_link && <Link2 className="w-3 h-3 text-[#1E3A8A]" />}
-          <CalendarClock className="w-3 h-3" /> {formatarData(card.projeto.prazo)}
+          <CalendarClock className="w-3 h-3" /> {formatarData(card.prazo)}
         </span>
       </div>
       {card.bloqueado && card.bloqueio && (
@@ -501,6 +520,11 @@ function CartaoCard({
             Dono: {card.bloqueio.dono?.nome ?? '—'} · revisar em{' '}
             {formatarData(card.bloqueio.revisao)}
           </p>
+          {card.bloqueio.vencido && (
+            <p className="inline-block mt-1 px-1.5 py-0.5 rounded bg-red-600 text-white font-semibold">
+              Revisão do bloqueio vencida
+            </p>
+          )}
         </div>
       )}
     </button>
@@ -513,6 +537,47 @@ const TIPO: Record<string, string> = {
   bloqueio: 'Bloqueado',
   desbloqueio: 'Desbloqueado',
   remapeamento: 'Remapeado pelo fluxo',
+  alteracao: 'Alteração',
+  bloqueio_revisado: 'Bloqueio revisado',
+}
+
+const ROTULO_ALTERACAO: Record<string, string> = {
+  responsavel: 'Responsável',
+  prioridade: 'Prioridade',
+  prazo: 'Prazo',
+}
+const fmtValor = (campo: string, v: string) =>
+  campo === 'prazo' && /^\d{4}-\d{2}-\d{2}/.test(v) ? formatarData(v) + v.slice(10) : v
+
+function DetalheEvento({ h }: { h: CardDetalhe['historico'][number] }) {
+  const det = (h.detalhes || {}) as Record<string, unknown>
+  if (h.tipo === 'alteracao' && Array.isArray(det.mudancas)) {
+    return (
+      <ul className="text-xs text-slate-600 mt-0.5">
+        {(det.mudancas as { campo: string; antes: string; depois: string }[]).map((m, i) => (
+          <li key={i}>
+            {ROTULO_ALTERACAO[m.campo] ?? m.campo}: {fmtValor(m.campo, m.antes)} →{' '}
+            <strong>{fmtValor(m.campo, m.depois)}</strong>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+  if (h.tipo === 'bloqueio_revisado') {
+    return (
+      <p className="text-xs text-slate-600 mt-0.5">
+        Revisão: {formatarData(String(det.revisao_antes ?? ''))} →{' '}
+        <strong>{formatarData(String(det.revisao_depois ?? ''))}</strong>
+        {det.dono_antes !== det.dono_depois && (
+          <>
+            {' '}
+            · dono: {String(det.dono_antes)} → <strong>{String(det.dono_depois)}</strong>
+          </>
+        )}
+      </p>
+    )
+  }
+  return null
 }
 
 function CardDialog({
@@ -540,6 +605,9 @@ function CardDialog({
   const [falha, setFalha] = useState('')
   const [resolucao, setResolucao] = useState('')
   const [enviando, setEnviando] = useState(false)
+  const [editar, setEditar] = useState(false)
+  const [revData, setRevData] = useState('')
+  const [revNota, setRevNota] = useState('')
 
   const carregar = useCallback(async () => {
     try {
@@ -588,6 +656,27 @@ function CardDialog({
         const f = extractFieldErrors(err)
         toast.error(f.resolucao || getErrorMessage(err))
       }
+    } finally {
+      setEnviando(false)
+    }
+  }
+
+  const revisar = async () => {
+    if (!d) return
+    setEnviando(true)
+    try {
+      await revisarBloqueio(d.id, d.versao, { revisao: revData, nota: revNota.trim() })
+      toast.success('Revisão do bloqueio registrada.')
+      setRevData('')
+      setRevNota('')
+      await carregar()
+      await onAlterado()
+    } catch (err) {
+      const m = msg409(err)
+      if (m) {
+        toast.error(m)
+        await carregar()
+      } else toast.error(getErrorMessage(err))
     } finally {
       setEnviando(false)
     }
@@ -663,6 +752,30 @@ function CardDialog({
               )}
             </div>
 
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-700">
+              <span>
+                Prioridade: <strong>{d.prioridade}</strong>
+                {!d.prioridade_propria && <span className="text-slate-400"> (do projeto)</span>}
+              </span>
+              <span className={d.atrasado ? 'text-red-600 font-semibold' : ''}>
+                Prazo: <strong>{formatarData(d.prazo)}</strong>
+                {!d.prazo_proprio && (
+                  <span className="text-slate-400 font-normal"> (do projeto)</span>
+                )}
+                {d.atrasado && ' · atrasado'}
+              </span>
+              {d.pode_editar && !d.projeto.arquivado && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="gap-1 h-7 text-[#1E3A8A]"
+                  onClick={() => setEditar(true)}
+                >
+                  <Pencil className="w-3.5 h-3.5" /> Reatribuir / prioridade / prazo
+                </Button>
+              )}
+            </div>
+
             {(d.observacao || d.link_entrega) && (
               <div className="rounded-lg border border-slate-200 p-3 text-sm space-y-1">
                 {d.observacao && (
@@ -692,6 +805,38 @@ function CardDialog({
                   Dono: {d.bloqueio.dono?.nome ?? '—'} · revisar em{' '}
                   {formatarData(d.bloqueio.revisao)} · desde {quando(d.bloqueio.desde)}
                 </p>
+                {d.bloqueio.vencido && (
+                  <p className="text-xs font-semibold text-white bg-red-600 rounded px-2 py-1 inline-block">
+                    A data de revisão deste bloqueio já passou. Revise ou resolva.
+                  </p>
+                )}
+                {podeDesbloquear && (
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Input
+                      type="date"
+                      min={hojeBR()}
+                      value={revData}
+                      onChange={(e) => setRevData(e.target.value)}
+                      className="bg-white sm:w-44"
+                      aria-label="Nova data de revisão"
+                    />
+                    <Input
+                      value={revNota}
+                      onChange={(e) => setRevNota(e.target.value)}
+                      placeholder="O que foi verificado? (nova revisão)"
+                      maxLength={1000}
+                      className="bg-white"
+                    />
+                    <Button
+                      variant="outline"
+                      onClick={revisar}
+                      disabled={enviando || !revData || revNota.trim().length < 3}
+                      className="bg-white"
+                    >
+                      Revisar
+                    </Button>
+                  </div>
+                )}
                 {podeDesbloquear && (
                   <div className="flex flex-col sm:flex-row gap-2">
                     <Input
@@ -771,6 +916,7 @@ function CardDialog({
                         <span>em {nomeEtapa(h.para)}</span>
                       ) : null}
                     </div>
+                    <DetalheEvento h={h} />
                     {h.justificativa && (
                       <p className="text-xs text-slate-500 mt-0.5">“{h.justificativa}”</p>
                     )}
@@ -780,6 +926,170 @@ function CardDialog({
             </div>
           </>
         )}
+      </DialogContent>
+      {editar && d && (
+        <AtribuicaoDialog
+          card={d}
+          onClose={() => setEditar(false)}
+          onDone={async () => {
+            setEditar(false)
+            await carregar()
+            await onAlterado()
+          }}
+        />
+      )}
+    </Dialog>
+  )
+}
+
+const HERDAR = '__herdar__'
+
+function AtribuicaoDialog({
+  card,
+  onClose,
+  onDone,
+}: {
+  card: CardDetalhe
+  onClose: () => void
+  onDone: () => Promise<void>
+}) {
+  const [pessoas, setPessoas] = useState<PessoaAtribuivel[]>([])
+  const [resp, setResp] = useState(card.responsavel?.id ?? HERDAR)
+  const [prio, setPrio] = useState(card.prioridade_propria ? card.prioridade : HERDAR)
+  const [prazo, setPrazo] = useState(card.prazo_proprio ? card.prazo : '')
+  const [just, setJust] = useState('')
+  const [erros, setErros] = useState<Record<string, string>>({})
+  const [enviando, setEnviando] = useState(false)
+
+  useEffect(() => {
+    listAtribuiveis()
+      .then((l) => setPessoas(l.filter((p) => p.papel !== 'executivo')))
+      .catch(() => setPessoas([]))
+  }, [])
+
+  const salvar = async () => {
+    const campos: { responsavel?: string; prioridade?: string; prazo?: string } = {}
+    if (resp !== (card.responsavel?.id ?? HERDAR)) campos.responsavel = resp === HERDAR ? '' : resp
+    const prioAtual = card.prioridade_propria ? card.prioridade : HERDAR
+    if (prio !== prioAtual) campos.prioridade = prio === HERDAR ? '' : prio
+    const prazoAtual = card.prazo_proprio ? card.prazo : ''
+    if (prazo !== prazoAtual) campos.prazo = prazo
+    if (Object.keys(campos).length === 0) {
+      onClose()
+      return
+    }
+    setEnviando(true)
+    setErros({})
+    try {
+      await atualizarCard(card.id, card.versao, campos, just.trim())
+      toast.success('Alteração registrada no histórico do card.')
+      await onDone()
+    } catch (err) {
+      const m = msg409(err)
+      if (m) {
+        toast.error(m)
+        await onDone()
+      } else {
+        const f = extractFieldErrors(err)
+        setErros(f)
+        toast.error(Object.keys(f).length ? 'Revise os campos destacados.' : getErrorMessage(err))
+      }
+    } finally {
+      setEnviando(false)
+    }
+  }
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Reatribuir, prioridade e prazo</DialogTitle>
+          <DialogDescription>
+            {card.disciplina.nome} · {card.projeto.nome}. A alteração fica no histórico com antes,
+            depois, autor e justificativa.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div>
+            <Label>Responsável</Label>
+            <Select value={resp} onValueChange={setResp}>
+              <SelectTrigger className={erros.responsavel ? 'border-red-500' : ''}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={HERDAR}>
+                  Herdar do coordenador ({card.projeto.coordenador?.nome ?? '—'})
+                </SelectItem>
+                {card.responsavel && !pessoas.some((p) => p.id === card.responsavel?.id) && (
+                  <SelectItem value={card.responsavel.id}>{card.responsavel.nome}</SelectItem>
+                )}
+                {pessoas.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {erros.responsavel && <p className="text-xs text-red-600 mt-1">{erros.responsavel}</p>}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <Label>Prioridade</Label>
+              <Select value={prio} onValueChange={setPrio}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={HERDAR}>Do projeto ({card.projeto.prioridade})</SelectItem>
+                  {[...PRIORIDADES].reverse().map((p) => (
+                    <SelectItem key={p} value={p}>
+                      {p}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Prazo da disciplina</Label>
+              <Input
+                type="date"
+                min={hojeBR()}
+                value={prazo}
+                onChange={(e) => setPrazo(e.target.value)}
+                className={erros.prazo ? 'border-red-500' : ''}
+              />
+              <p className="text-xs text-slate-500 mt-1">
+                Vazio = prazo do projeto ({formatarData(card.projeto.prazo)})
+              </p>
+              {erros.prazo && <p className="text-xs text-red-600 mt-1">{erros.prazo}</p>}
+            </div>
+          </div>
+          <div>
+            <Label>Justificativa *</Label>
+            <Textarea
+              rows={2}
+              maxLength={1000}
+              value={just}
+              onChange={(e) => setJust(e.target.value)}
+              className={erros.justificativa ? 'border-red-500' : ''}
+            />
+            {erros.justificativa && (
+              <p className="text-xs text-red-600 mt-1">{erros.justificativa}</p>
+            )}
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button
+            onClick={salvar}
+            disabled={enviando || just.trim().length < 3}
+            className="bg-[#1E3A8A] hover:bg-[#1E2A6B]"
+          >
+            {enviando ? 'Salvando…' : 'Salvar'}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

@@ -8,6 +8,7 @@ import {
   ScrollText,
   Loader2,
   KanbanSquare,
+  ListTodo,
   Workflow,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -58,6 +59,9 @@ export default function AppShell({ roles, largo }: AppShellProps) {
             <NavLink to="/dashboard" className={navClass}>
               <LayoutDashboard className="w-4 h-4" /> Início
             </NavLink>
+            <NavLink to="/fila" className={navClass}>
+              <ListTodo className="w-4 h-4" /> Fila
+            </NavLink>
             <NavLink to="/kanban" className={navClass}>
               <KanbanSquare className="w-4 h-4" /> Kanban
             </NavLink>
@@ -101,6 +105,9 @@ export default function AppShell({ roles, largo }: AppShellProps) {
       <nav className="md:hidden flex gap-1 px-4 py-2 bg-white border-b border-slate-200 overflow-x-auto">
         <NavLink to="/dashboard" className={navClass}>
           Início
+        </NavLink>
+        <NavLink to="/fila" className={navClass}>
+          Fila
         </NavLink>
         <NavLink to="/kanban" className={navClass}>
           Kanban
