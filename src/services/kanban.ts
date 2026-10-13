@@ -7,6 +7,7 @@ export interface Bloqueio {
   dono: Pessoa | null
   revisao: string
   desde: string
+  vencido?: boolean
 }
 
 export interface CardKanban {
@@ -24,6 +25,9 @@ export interface CardKanban {
   }
   disciplina: { id: string; nome: string; sigla: string }
   responsavel: Pessoa | null
+  prioridade: string
+  prazo: string
+  atrasado: boolean
   tem_link: boolean
   versao: string
   created: string
@@ -40,7 +44,14 @@ export interface Quadro {
 
 export interface EventoCard {
   id: string
-  tipo: 'criacao' | 'transicao' | 'bloqueio' | 'desbloqueio' | 'remapeamento'
+  tipo:
+    | 'criacao'
+    | 'transicao'
+    | 'bloqueio'
+    | 'desbloqueio'
+    | 'remapeamento'
+    | 'alteracao'
+    | 'bloqueio_revisado'
   de: string
   para: string
   justificativa: string
@@ -57,12 +68,20 @@ export interface CardDetalhe {
   observacao: string
   link_entrega: string
   versao: string
+  prioridade: string
+  prioridade_propria: boolean
+  prazo: string
+  prazo_proprio: boolean
+  atrasado: boolean
+  pode_editar: boolean
   projeto: {
     id: string
     nome: string
     arquivado: boolean
     coordenador: Pessoa | null
     membros: string[]
+    prioridade: string
+    prazo: string
   }
   equipe: Pessoa[]
   disciplina: { id: string; nome: string; sigla: string }
@@ -129,6 +148,29 @@ export const desbloquearCard = (id: string, versao: string, resolucao: string) =
   pb.send(`/backend/v1/cards/${encodeURIComponent(id)}/desbloquear`, {
     method: 'POST',
     body: { versao, resolucao },
+  })
+
+// Reatribuir / mudar prioridade / prazo do card (coordenador do projeto ou admin).
+// Valor vazio volta a herdar (responsável → coordenador; prioridade e prazo → projeto).
+export const atualizarCard = (
+  id: string,
+  versao: string,
+  campos: { responsavel?: string; prioridade?: string; prazo?: string },
+  justificativa: string,
+) =>
+  pb.send<{ id: string; versao: string; alterado: boolean }>(
+    `/backend/v1/cards/${encodeURIComponent(id)}`,
+    { method: 'PATCH', body: { versao, justificativa, ...campos } },
+  )
+
+export const revisarBloqueio = (
+  id: string,
+  versao: string,
+  dados: { revisao: string; nota: string; dono?: string },
+) =>
+  pb.send(`/backend/v1/cards/${encodeURIComponent(id)}/bloqueio/revisar`, {
+    method: 'POST',
+    body: { versao, ...dados },
   })
 
 export const getFluxo = () =>
