@@ -252,8 +252,8 @@ function NovoUsuarioDialog({
   }, [open])
 
   const salvar = async () => {
-    if (password.length < 12) {
-      toast.error('A senha deve ter pelo menos 12 caracteres.')
+    if (password.length < 8) {
+      toast.error('A senha deve ter pelo menos 8 caracteres.')
       return
     }
     setSalvando(true)
@@ -308,7 +308,7 @@ function NovoUsuarioDialog({
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="nu-senha">Senha temporária (mínimo 12)</Label>
+            <Label htmlFor="nu-senha">Senha temporária (mínimo 8)</Label>
             <div className="flex gap-2">
               <Input
                 id="nu-senha"
@@ -350,8 +350,8 @@ function SenhaDialog({ alvo, onClose }: { alvo: UserRecord | null; onClose: () =
 
   const salvar = async () => {
     if (!alvo) return
-    if (password.length < 12) {
-      toast.error('A senha deve ter pelo menos 12 caracteres.')
+    if (password.length < 8) {
+      toast.error('A senha deve ter pelo menos 8 caracteres.')
       return
     }
     setSalvando(true)
@@ -381,7 +381,7 @@ function SenhaDialog({ alvo, onClose }: { alvo: UserRecord | null; onClose: () =
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="new-password"
-            placeholder="Mínimo de 12 caracteres"
+            placeholder="Mínimo de 8 caracteres"
           />
           <Button type="button" variant="outline" onClick={() => setPassword(gerarSenha())}>
             Gerar

@@ -19,7 +19,7 @@ export default function ResetPassword() {
 
   const validate = () => {
     if (!token) return 'Este link de redefinição é inválido ou está incompleto.'
-    if (password.length < 12) return 'A senha deve ter pelo menos 12 caracteres.'
+    if (password.length < 8) return 'A senha deve ter pelo menos 8 caracteres.'
     if (password !== passwordConfirm) return 'As senhas não coincidem.'
     return null
   }
@@ -74,7 +74,7 @@ export default function ResetPassword() {
                 Redefinir senha
               </h1>
               <p className="text-sm text-slate-500 leading-relaxed">
-                Crie uma nova senha com pelo menos 12 caracteres.
+                Crie uma nova senha com pelo menos 8 caracteres.
               </p>
             </div>
 
@@ -99,7 +99,7 @@ export default function ResetPassword() {
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   autoComplete="new-password"
-                  minLength={12}
+                  minLength={8}
                   required
                   disabled={isSubmitting}
                   className="h-12 text-[15px] rounded-lg border-slate-300 focus-visible:ring-[#1E3A8A]/20 focus-visible:border-[#1E3A8A]"
@@ -118,7 +118,7 @@ export default function ResetPassword() {
                   value={passwordConfirm}
                   onChange={(event) => setPasswordConfirm(event.target.value)}
                   autoComplete="new-password"
-                  minLength={12}
+                  minLength={8}
                   required
                   disabled={isSubmitting}
                   className="h-12 text-[15px] rounded-lg border-slate-300 focus-visible:ring-[#1E3A8A]/20 focus-visible:border-[#1E3A8A]"

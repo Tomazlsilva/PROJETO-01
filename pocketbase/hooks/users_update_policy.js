@@ -17,8 +17,8 @@ onRecordUpdateRequest((e) => {
   }
 
   const body = e.requestInfo().body || {}
-  if (typeof body.password === 'string' && body.password.length < 12) {
-    throw new BadRequestError('A senha deve ter pelo menos 12 caracteres.')
+  if (typeof body.password === 'string' && body.password.length < 8) {
+    throw new BadRequestError('A senha deve ter pelo menos 8 caracteres.')
   }
 
   const rec = e.record

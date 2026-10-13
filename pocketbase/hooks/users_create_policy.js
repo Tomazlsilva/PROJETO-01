@@ -25,8 +25,8 @@ onRecordCreateRequest((e) => {
   }
 
   const password = typeof body.password === 'string' ? body.password : ''
-  if (password.length < 12) {
-    throw new BadRequestError('A senha deve ter pelo menos 12 caracteres.')
+  if (password.length < 8) {
+    throw new BadRequestError('A senha deve ter pelo menos 8 caracteres.')
   }
   const roles = ['admin', 'coordenador', 'projetista', 'revisor', 'executivo']
   if (!roles.includes(e.record.getString('role'))) {

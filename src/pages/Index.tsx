@@ -90,8 +90,8 @@ export default function Index() {
   }
 
   const validatePassword = (val: string): string | null => {
-    if (!val || val.length < 12) {
-      return 'A senha deve ter pelo menos 12 caracteres.'
+    if (!val || val.length < 8) {
+      return 'A senha deve ter pelo menos 8 caracteres.'
     }
     return null
   }
@@ -338,7 +338,7 @@ export default function Index() {
             {/* Campo Senha */}
             <div className="space-y-1.5">
               <Label htmlFor="login-password" className="text-sm font-semibold text-slate-700">
-                Senha (mínimo de 12 caracteres)
+                Senha (mínimo de 8 caracteres)
               </Label>
               <div className="relative">
                 <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
