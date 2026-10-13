@@ -76,8 +76,17 @@ export default function Index() {
     void listLoginProviders().then(setProvedores)
   }, [listLoginProviders])
 
+  // Sem provedor configurado ainda, o botão aparece mas só avisa
+  const botoesLogin = provedores.length > 0 ? provedores : [{ name: '', displayName: 'Microsoft' }]
+
   const entrarComProvedor = async (provider: string) => {
     setServerError(null)
+    if (!provider) {
+      setServerError(
+        'O login com a conta Microsoft ainda está sendo configurado. Por enquanto, entre com e-mail e senha.',
+      )
+      return
+    }
     setEntrandoCom(provider)
     try {
       await loginWithProvider(provider)
@@ -324,18 +333,18 @@ export default function Index() {
           )}
 
           {/* Login pela conta corporativa (Microsoft) */}
-          {provedores.length > 0 && (
+          {botoesLogin.length > 0 && (
             <div className="mb-6 space-y-3">
-              {provedores.map((p) => (
+              {botoesLogin.map((p) => (
                 <Button
-                  key={p.name}
+                  key={p.name || 'microsoft'}
                   type="button"
                   variant="outline"
                   disabled={isSubmitting || entrandoCom !== null}
                   onClick={() => void entrarComProvedor(p.name)}
                   className="w-full h-12 text-[15px] font-semibold border-slate-300 rounded-lg flex items-center justify-center gap-2.5"
                 >
-                  {entrandoCom === p.name ? (
+                  {entrandoCom !== null && entrandoCom === p.name ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
                     <svg viewBox="0 0 21 21" className="w-4 h-4" aria-hidden="true">
