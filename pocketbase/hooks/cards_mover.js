@@ -2,6 +2,7 @@
 // papel/vínculo, transição permitida, etapa ativa, bloqueio, projeto arquivado,
 // campos obrigatórios da transição e versão (conflito otimista).
 // Grava a transição (de/para, autor, horário, justificativa) no histórico.
+// SPEC-1-005: idempotência por chave e handoff para o próximo responsável na mesma transação.
 routerAdd(
   'POST',
   '/backend/v1/cards/{id}/mover',
@@ -78,6 +79,34 @@ routerAdd(
     }
 
     const body = info.body || {}
+
+    // Idempotência (SPEC-1-005): repetir a mesma requisição devolve o resultado anterior
+    const idem = typeof body.idempotencia === 'string' ? body.idempotencia.trim() : ''
+    if (idem && !/^[A-Za-z0-9_.:-]{8,64}$/.test(idem)) {
+      throw new BadRequestError('Revise os campos destacados.', {
+        idempotencia: new ValidationError('invalida', 'Chave de idempotência inválida.'),
+      })
+    }
+    if (idem) {
+      const ja = $app.findRecordsByFilter('transicoes', 'idempotencia = {:k}', '', 1, 0, {
+        k: idem,
+      })
+      if (ja.length > 0) {
+        if (ja[0].getString('card') !== id)
+          return e.json(409, {
+            code: 'chave_reutilizada',
+            message: 'Chave de idempotência já usada em outro card.',
+          })
+        const atual = $app.findRecordById('projeto_disciplinas', id)
+        return e.json(200, {
+          id: id,
+          etapa: ja[0].getString('para'),
+          versao: atual.getString('updated'),
+          repetido: true,
+          transicao: ja[0].id,
+        })
+      }
+    }
     const para = String(body.para || '')
     const justificativa =
       typeof body.justificativa === 'string' ? body.justificativa.trim().slice(0, 1000) : ''
@@ -224,6 +253,7 @@ routerAdd(
 
     let situacao = 'ok'
     let versao = ''
+    let handoff = null
     $app.runInTransaction((tx) => {
       const c = tx.findRecordById('projeto_disciplinas', id)
       const p = tx.findRecordById('projetos', c.getString('projeto'))
@@ -255,8 +285,137 @@ routerAdd(
         configuracao: versoes.length > 0 ? versoes[0].getInt('numero') : 0,
         campos: Object.keys(novos),
       })
+      if (idem) t.set('idempotencia', idem)
       tx.save(t)
       versao = c.getString('updated')
+
+      // ---- Handoff (SPEC-1-005): encerra pendências da etapa anterior e cria a do próximo responsável ----
+      const agoraTxt = new Date().toISOString().replace('T', ' ')
+      const ator = su ? '' : auth.id
+      for (const a of tx.findRecordsByFilter(
+        'atividades',
+        "card = {:c} && (status = 'pendente' || status = 'recebida')",
+        '',
+        0,
+        0,
+        { c: c.id },
+      )) {
+        a.set('status', 'concluida')
+        a.set('encerrada_em', agoraTxt)
+        if (ator) a.set('encerrada_por', ator)
+        a.set('encerramento', 'Card seguiu para "' + nomeEtapa(para) + '"')
+        tx.save(a)
+      }
+      let alvo = ''
+      if (para === 'aguardando_revisao') alvo = c.getString('revisor')
+      else if (para === 'aprovado' || para === 'entrada_pendente') alvo = p.getString('coordenador')
+      else alvo = c.getString('responsavel')
+      let falha = ''
+      if (!alvo) falha = 'destino_ausente'
+      else {
+        let u = null
+        try {
+          u = tx.findRecordById('users', alvo)
+        } catch (_) {}
+        if (!u || !u.getBool('active')) falha = 'destino_inativo'
+      }
+      if (falha || alvo !== ator) {
+        const coord = p.getString('coordenador')
+        const destinatario = falha ? coord : alvo
+        const motivoTexto =
+          falha === 'destino_ausente'
+            ? para === 'aguardando_revisao'
+              ? 'Disciplina sem revisor definido.'
+              : 'Disciplina sem responsável definido.'
+            : falha === 'destino_inativo'
+              ? 'O destinatário está inativo.'
+              : ''
+        const proxima = falha
+          ? para === 'aguardando_revisao'
+            ? 'Defina o revisor da disciplina e reprocesse.'
+            : 'Defina um responsável ativo e reprocesse.'
+          : ''
+        const chaveH = 'transicao:' + t.id
+        const ev = new Record(tx.findCollectionByNameOrId('handoff_eventos'))
+        ev.set('chave', chaveH)
+        ev.set('card', c.id)
+        ev.set('projeto', p.id)
+        ev.set('transicao', t.id)
+        ev.set('etapa_origem', de)
+        ev.set('etapa_destino', para)
+        if (alvo) ev.set('destino_esperado', alvo)
+        ev.set('status', falha ? 'falha' : 'entregue')
+        ev.set('motivo', falha)
+        ev.set('proxima_acao', proxima)
+        ev.set('tentativas', 1)
+        ev.set('historico', [
+          {
+            tentativa: 1,
+            em: agoraTxt,
+            autor: ator,
+            resultado: falha ? 'falha' : 'entregue',
+            motivo: falha,
+          },
+        ])
+        if (!falha) ev.set('resolvido_em', agoraTxt)
+        tx.save(ev)
+        const at = new Record(tx.findCollectionByNameOrId('atividades'))
+        at.set('chave', chaveH)
+        at.set('card', c.id)
+        at.set('projeto', p.id)
+        at.set('evento', ev.id)
+        at.set('etapa', para)
+        at.set('etapa_origem', de)
+        if (destinatario) at.set('destinatario', destinatario)
+        if (ator) at.set('remetente', ator)
+        at.set('status', 'pendente')
+        at.set('precisa_ajuste', !!falha)
+        at.set('motivo_ajuste', motivoTexto)
+        tx.save(at)
+        ev.set('atividade', at.id)
+        tx.save(ev)
+        let discNome = ''
+        try {
+          discNome = tx.findRecordById('disciplinas', c.getString('disciplina')).getString('nome')
+        } catch (_) {}
+        if (destinatario) {
+          const n = new Record(tx.findCollectionByNameOrId('notificacoes'))
+          n.set('destinatario', destinatario)
+          n.set('atividade', at.id)
+          n.set('card', c.id)
+          n.set('projeto', p.id)
+          n.set(
+            'titulo',
+            (falha ? 'Ajuste necessário: ' : 'Nova pendência: ') +
+              discNome +
+              ' — ' +
+              p.getString('nome'),
+          )
+          n.set('texto', falha ? motivoTexto + ' ' + proxima : 'Etapa "' + nomeEtapa(para) + '".')
+          n.set('lida', false)
+          tx.save(n)
+        }
+        const th = new Record(tx.findCollectionByNameOrId('transicoes'))
+        th.set('card', c.id)
+        th.set('projeto', p.id)
+        th.set('tipo', 'handoff')
+        th.set('de', de)
+        th.set('para', para)
+        if (ator) th.set('autor', ator)
+        th.set('detalhes', {
+          acao: falha ? 'encaminhado_coordenador' : 'criado',
+          atividade: at.id,
+          destinatario: destinatario,
+          motivo: falha,
+        })
+        tx.save(th)
+        handoff = {
+          atividade: at.id,
+          destinatario: destinatario,
+          precisa_ajuste: !!falha,
+          motivo: falha,
+        }
+      }
     })
     if (situacao === 'arquivado')
       return conflito('projeto_arquivado', 'Projeto arquivado: restaure-o para mover os cards.')
@@ -268,7 +427,18 @@ routerAdd(
         'Outra pessoa alterou este card depois que você abriu. Atualize o Kanban e tente de novo.',
       )
     }
-    return e.json(200, { id: id, etapa: para, versao: versao })
+    if (handoff && handoff.destinatario) {
+      try {
+        const u = $app.findRecordById('users', handoff.destinatario)
+        handoff.destinatario = {
+          id: u.id,
+          nome: u.getString('name') || u.getString('email').split('@')[0],
+        }
+      } catch (_) {
+        handoff.destinatario = { id: handoff.destinatario, nome: '—' }
+      }
+    }
+    return e.json(200, { id: id, etapa: para, versao: versao, handoff: handoff })
   },
   $apis.requireAuth(),
 )

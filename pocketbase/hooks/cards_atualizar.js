@@ -1,5 +1,5 @@
 // SPEC-1-004 (T1.19, CA-1-004-06) — coordenador do projeto ou administrador reatribui
-// o card, muda a prioridade ou o prazo próprio. Valor vazio = volta a herdar
+// o card, define o revisor (SPEC-1-005), muda a prioridade ou o prazo próprio. Valor vazio = volta a herdar
 // (responsável → coordenador; prioridade e prazo → do projeto).
 // Exige justificativa e a versão do card; registra antes/depois, autor e horário
 // no histórico do card (e a reatribuição também no histórico do projeto).
@@ -96,6 +96,36 @@ routerAdd(
       }
       novos.responsavel = r
     }
+    if (body.revisor !== undefined) {
+      const r = body.revisor ? String(body.revisor) : ''
+      if (r) {
+        let u = null
+        try {
+          u = $app.findRecordById('users', r)
+        } catch (_) {}
+        const respFinal =
+          novos.responsavel !== undefined
+            ? novos.responsavel || coordId
+            : card.getString('responsavel')
+        if (
+          !u ||
+          !u.getBool('active') ||
+          u.getString('role') === 'executivo' ||
+          u.getString('role') === 'projetista'
+        ) {
+          erros.revisor = new ValidationError(
+            'invalido',
+            'Escolha um revisor ativo (revisor, coordenador ou administrador).',
+          )
+        } else if (r === respFinal) {
+          erros.revisor = new ValidationError(
+            'mesma_pessoa',
+            'O revisor não pode ser o responsável pela disciplina.',
+          )
+        }
+      }
+      novos.revisor = r
+    }
     if (body.prioridade !== undefined) {
       const v = body.prioridade ? String(body.prioridade) : ''
       if (v && ['Baixa', 'Normal', 'Alta', 'Urgente'].indexOf(v) < 0)
@@ -172,6 +202,25 @@ routerAdd(
               p.set('membros', membros)
               tx.save(p)
             }
+          }
+        }
+      }
+      if (novos.revisor !== undefined && novos.revisor !== c.getString('revisor')) {
+        const antes = c.getString('revisor')
+        c.set('revisor', novos.revisor)
+        mudancas.push({
+          campo: 'revisor',
+          antes: antes ? nomeDe(antes) : 'sem revisor',
+          depois: novos.revisor ? nomeDe(novos.revisor) : 'sem revisor',
+          antes_id: antes,
+          depois_id: novos.revisor,
+        })
+        if (novos.revisor && novos.revisor !== coordId) {
+          const membros = p.getStringSlice('membros')
+          if (membros.indexOf(novos.revisor) < 0) {
+            membros.push(novos.revisor)
+            p.set('membros', membros)
+            tx.save(p)
           }
         }
       }

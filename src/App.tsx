@@ -14,6 +14,7 @@ import Auditoria from './pages/admin/Auditoria'
 import Fluxo from './pages/admin/Fluxo'
 import Kanban from './pages/Kanban'
 import Fila from './pages/Fila'
+import Falhas from './pages/Falhas'
 import Layout from './components/Layout'
 import AppShell from './components/AppShell'
 
@@ -37,6 +38,9 @@ const App = () => (
           </Route>
           <Route element={<AppShell largo />}>
             <Route path="/kanban" element={<Kanban />} />
+          </Route>
+          <Route element={<AppShell roles={['admin', 'coordenador']} />}>
+            <Route path="/falhas" element={<Falhas />} />
           </Route>
           <Route element={<AppShell roles={['admin']} />}>
             <Route path="/admin/usuarios" element={<Usuarios />} />

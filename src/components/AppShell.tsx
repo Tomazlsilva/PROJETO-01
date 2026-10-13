@@ -10,9 +10,11 @@ import {
   KanbanSquare,
   ListTodo,
   Workflow,
+  AlertTriangle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { CmxLogo } from '@/components/CmxLogo'
+import { Notificacoes } from '@/components/Notificacoes'
 import { useAuth } from '@/contexts/AuthContext'
 import { ROLE_LABEL, type Role } from '@/lib/permissions'
 
@@ -41,6 +43,7 @@ export default function AppShell({ roles, largo }: AppShellProps) {
   }
 
   const allowed = !roles || (role !== null && roles.includes(role))
+  const veFalhas = role === 'admin' || role === 'coordenador'
   const userName = (user?.name as string) || (user?.email as string)?.split('@')[0] || 'Usuário'
 
   const navClass = ({ isActive }: { isActive: boolean }) =>
@@ -65,6 +68,11 @@ export default function AppShell({ roles, largo }: AppShellProps) {
             <NavLink to="/kanban" className={navClass}>
               <KanbanSquare className="w-4 h-4" /> Kanban
             </NavLink>
+            {veFalhas && (
+              <NavLink to="/falhas" className={navClass}>
+                <AlertTriangle className="w-4 h-4" /> Falhas
+              </NavLink>
+            )}
             {isAdmin && (
               <>
                 <NavLink to="/admin/usuarios" className={navClass}>
@@ -81,6 +89,7 @@ export default function AppShell({ roles, largo }: AppShellProps) {
           </nav>
         </div>
         <div className="flex items-center gap-3">
+          <Notificacoes />
           <div className="hidden sm:block text-right">
             <div className="text-sm font-semibold text-slate-800 leading-tight">{userName}</div>
             <div className="text-xs text-slate-500">{role ? ROLE_LABEL[role] : 'Sem papel'}</div>
@@ -112,6 +121,11 @@ export default function AppShell({ roles, largo }: AppShellProps) {
         <NavLink to="/kanban" className={navClass}>
           Kanban
         </NavLink>
+        {veFalhas && (
+          <NavLink to="/falhas" className={navClass}>
+            Falhas
+          </NavLink>
+        )}
         {isAdmin && (
           <>
             <NavLink to="/admin/usuarios" className={navClass}>

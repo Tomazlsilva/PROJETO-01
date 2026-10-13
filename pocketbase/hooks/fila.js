@@ -1,7 +1,8 @@
 // SPEC-1-004 (T1.17) — fila acionável de uma pessoa.
 // Itens ativos (projeto não arquivado, card não aprovado) em que a pessoa:
 //   - é responsável;  - é dona de um bloqueio;  - pode revisar (revisor do projeto
-//   ou coordenador, card aguardando revisão e não é dela).
+//   ou coordenador, card aguardando revisão e não é dela);
+//   - recebeu uma pendência (handoff, SPEC-1-005) ainda aberta.
 // Ordem padrão: bloqueio vencido → prioridade (Urgente→Baixa) → prazo → criação → id.
 // Prioridade e prazo do card prevalecem sobre os do projeto. Datas no fuso de Brasília.
 // Ver a fila de outra pessoa: administrador/executivo (tudo) ou coordenador (só os
@@ -126,13 +127,40 @@ routerAdd(
       0,
       { p: pid },
     )
-    let itens = []
+    // SPEC-1-005: pendências (handoffs) abertas para a pessoa
+    const atvPorCard = {}
+    for (const a of $app.findRecordsByFilter(
+      'atividades',
+      "destinatario = {:p} && (status = 'pendente' || status = 'recebida') && projeto.arquivado = false",
+      'created',
+      0,
+      0,
+      { p: pid },
+    )) {
+      atvPorCard[a.getString('card')] = a
+    }
+    const jaTem = {}
+    const todos = []
     for (const c of candidatos) {
+      jaTem[c.id] = true
+      todos.push(c)
+    }
+    for (const cid of Object.keys(atvPorCard)) {
+      if (jaTem[cid]) continue
+      try {
+        todos.push($app.findRecordById('projeto_disciplinas', cid))
+      } catch (_) {}
+    }
+    let itens = []
+    for (const c of todos) {
       const p = projetoDe(c.getString('projeto'))
       if (!p) continue
       const bloqueado = c.getBool('bloqueado')
       const motivos = []
-      if (c.getString('responsavel') === pid) motivos.push('responsavel')
+      const atv = atvPorCard[c.id] || null
+      if (atv) motivos.push('handoff')
+      const ativo = c.getString('etapa') !== 'aprovado'
+      if (ativo && c.getString('responsavel') === pid) motivos.push('responsavel')
       if (bloqueado && c.getString('bloqueio_dono') === pid) motivos.push('bloqueio')
       if (
         c.getString('etapa') === 'aguardando_revisao' &&
@@ -168,6 +196,17 @@ routerAdd(
               revisao: revisao,
               desde: c.getString('bloqueado_em'),
               vencido: !!revisao && revisao < hoje,
+            }
+          : null,
+        atividade: atv
+          ? {
+              id: atv.id,
+              status: atv.getString('status'),
+              etapa: atv.getString('etapa'),
+              precisa_ajuste: atv.getBool('precisa_ajuste'),
+              motivo_ajuste: atv.getString('motivo_ajuste'),
+              remetente: pessoaDe(atv.getString('remetente')),
+              created: atv.getString('created'),
             }
           : null,
         versao: c.getString('updated'),

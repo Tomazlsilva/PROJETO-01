@@ -52,6 +52,7 @@ export interface EventoCard {
     | 'remapeamento'
     | 'alteracao'
     | 'bloqueio_revisado'
+    | 'handoff'
   de: string
   para: string
   justificativa: string
@@ -84,9 +85,50 @@ export interface CardDetalhe {
     prazo: string
   }
   equipe: Pessoa[]
+  revisor: Pessoa | null
+  atividades: AtividadeCard[]
+  handoffs: EventoHandoff[]
   disciplina: { id: string; nome: string; sigla: string }
   responsavel: Pessoa | null
   historico: EventoCard[]
+}
+
+// SPEC-1-005: pendência criada para o próximo responsável quando o card muda de etapa
+export interface AtividadeCard {
+  id: string
+  etapa: Etapa
+  etapa_origem: Etapa | ''
+  status: 'pendente' | 'recebida' | 'concluida' | 'cancelada' | 'devolvida'
+  destinatario: Pessoa | null
+  remetente: Pessoa | null
+  precisa_ajuste: boolean
+  motivo_ajuste: string
+  recebida_em: string
+  encerrada_em: string
+  encerrada_por: Pessoa | null
+  encerramento: string
+  created: string
+}
+
+export interface TentativaHandoff {
+  tentativa: number
+  em: string
+  autor: Pessoa | null
+  resultado: string
+  motivo: string
+}
+
+export interface EventoHandoff {
+  id: string
+  atividade: string
+  etapa_origem: string
+  etapa_destino: string
+  status: 'entregue' | 'falha' | 'obsoleto'
+  motivo: string
+  proxima_acao: string
+  tentativas: number
+  historico: TentativaHandoff[]
+  created: string
 }
 
 export interface VersaoFluxo {
@@ -130,7 +172,14 @@ export const moverCard = (
     `/backend/v1/cards/${encodeURIComponent(id)}/mover`,
     {
       method: 'POST',
-      body: { para, versao, justificativa: justificativa || '', campos: campos || {} },
+      body: {
+        para,
+        versao,
+        justificativa: justificativa || '',
+        campos: campos || {},
+        // repetir a mesma requisição (ex.: rede instável) não duplica a transição
+        idempotencia: crypto.randomUUID(),
+      },
     },
   )
 
@@ -155,7 +204,7 @@ export const desbloquearCard = (id: string, versao: string, resolucao: string) =
 export const atualizarCard = (
   id: string,
   versao: string,
-  campos: { responsavel?: string; prioridade?: string; prazo?: string },
+  campos: { responsavel?: string; revisor?: string; prioridade?: string; prazo?: string },
   justificativa: string,
 ) =>
   pb.send<{ id: string; versao: string; alterado: boolean }>(

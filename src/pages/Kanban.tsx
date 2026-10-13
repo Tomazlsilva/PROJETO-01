@@ -6,14 +6,17 @@ import {
   CalendarClock,
   Download,
   ExternalLink,
+  Inbox,
   Link2,
   Loader2,
   Lock,
   Pencil,
   RefreshCw,
+  Undo2,
   Unlock,
   User,
 } from 'lucide-react'
+import { cancelarAtividade, devolverAtividade, receberAtividade } from '@/services/handoffs'
 import { toast } from 'sonner'
 import { ClientResponseError } from 'pocketbase'
 import { Button } from '@/components/ui/button'
@@ -539,10 +542,28 @@ const TIPO: Record<string, string> = {
   remapeamento: 'Remapeado pelo fluxo',
   alteracao: 'Alteração',
   bloqueio_revisado: 'Bloqueio revisado',
+  handoff: 'Pendência',
+}
+
+const ACAO_HANDOFF: Record<string, string> = {
+  criado: 'enviada ao próximo responsável',
+  encaminhado_coordenador: 'encaminhada ao coordenador (ajuste necessário)',
+  reprocessado: 'reprocessada e entregue',
+  cancelado: 'cancelada',
+  devolvido: 'devolvida',
+}
+
+const STATUS_ATIVIDADE: Record<string, string> = {
+  pendente: 'Pendente',
+  recebida: 'Recebida',
+  concluida: 'Concluída',
+  cancelada: 'Cancelada',
+  devolvida: 'Devolvida',
 }
 
 const ROTULO_ALTERACAO: Record<string, string> = {
   responsavel: 'Responsável',
+  revisor: 'Revisor',
   prioridade: 'Prioridade',
   prazo: 'Prazo',
 }
@@ -551,6 +572,13 @@ const fmtValor = (campo: string, v: string) =>
 
 function DetalheEvento({ h }: { h: CardDetalhe['historico'][number] }) {
   const det = (h.detalhes || {}) as Record<string, unknown>
+  if (h.tipo === 'handoff') {
+    return (
+      <p className="text-xs text-slate-600 mt-0.5">
+        Pendência {ACAO_HANDOFF[String(det.acao)] ?? String(det.acao ?? '')}
+      </p>
+    )
+  }
   if (h.tipo === 'alteracao' && Array.isArray(det.mudancas)) {
     return (
       <ul className="text-xs text-slate-600 mt-0.5">
@@ -608,6 +636,7 @@ function CardDialog({
   const [editar, setEditar] = useState(false)
   const [revData, setRevData] = useState('')
   const [revNota, setRevNota] = useState('')
+  const [devolucao, setDevolucao] = useState('')
 
   const carregar = useCallback(async () => {
     try {
@@ -682,6 +711,34 @@ function CardDialog({
     }
   }
 
+  // SPEC-1-005: ações na pendência (receber, devolver, cancelar)
+  const acaoPendencia = async (fn: () => Promise<unknown>, ok: string) => {
+    setEnviando(true)
+    try {
+      await fn()
+      toast.success(ok)
+      setDevolucao('')
+      await carregar()
+      await onAlterado()
+    } catch (err) {
+      const m = msg409(err)
+      if (m) {
+        toast.error(m)
+        await carregar()
+      } else {
+        const f = extractFieldErrors(err)
+        toast.error(f.justificativa || getErrorMessage(err))
+      }
+    } finally {
+      setEnviando(false)
+    }
+  }
+  const abertas = (d?.atividades ?? []).filter(
+    (a) => a.status === 'pendente' || a.status === 'recebida',
+  )
+  const ehCoordOuAdmin =
+    !!ctx && (ctx.role === 'admin' || (ctx.role === 'coordenador' && ctx.coordenadorId === userId))
+
   const exportar = () => {
     if (!d) return
     const esc = (v: string) => `"${String(v ?? '').replace(/"/g, '""')}"`
@@ -732,7 +789,8 @@ function CardDialog({
                 <Link to={`/projetos/${d.projeto.id}`} className="text-[#1E3A8A] hover:underline">
                   {d.projeto.nome}
                 </Link>{' '}
-                · Responsável: {d.responsavel?.nome ?? '—'}
+                · Responsável: {d.responsavel?.nome ?? '—'} · Revisor:{' '}
+                {d.revisor?.nome ?? 'não definido'}
               </DialogDescription>
             </DialogHeader>
 
@@ -771,7 +829,7 @@ function CardDialog({
                   className="gap-1 h-7 text-[#1E3A8A]"
                   onClick={() => setEditar(true)}
                 >
-                  <Pencil className="w-3.5 h-3.5" /> Reatribuir / prioridade / prazo
+                  <Pencil className="w-3.5 h-3.5" /> Responsável, revisor, prioridade e prazo
                 </Button>
               )}
             </div>
@@ -855,6 +913,91 @@ function CardDialog({
                     </Button>
                   </div>
                 )}
+              </div>
+            )}
+
+            {abertas.length > 0 && (
+              <div className="rounded-lg border border-blue-200 bg-blue-50/60 p-3 text-sm space-y-2">
+                <p className="text-xs font-semibold uppercase text-[#1E3A8A] flex items-center gap-1.5">
+                  <Inbox className="w-3.5 h-3.5" /> Pendência em aberto
+                </p>
+                {abertas.map((a) => {
+                  const minha = a.destinatario?.id === userId
+                  const podeDevolver =
+                    (minha || ehCoordOuAdmin) && !!a.etapa_origem && a.etapa === d.etapa
+                  return (
+                    <div key={a.id} className="space-y-2">
+                      <p className="text-slate-800">
+                        <strong>{a.destinatario?.nome ?? '—'}</strong> ·{' '}
+                        {STATUS_ATIVIDADE[a.status] ?? a.status}
+                        {a.remetente && <> · enviada por {a.remetente.nome}</>} ·{' '}
+                        {quando(a.created)}
+                      </p>
+                      {a.precisa_ajuste && (
+                        <p className="text-xs font-semibold text-amber-800 bg-amber-100 rounded px-2 py-1 inline-block">
+                          Ajuste necessário: {a.motivo_ajuste}
+                        </p>
+                      )}
+                      <div className="flex flex-wrap gap-2">
+                        {minha && a.status === 'pendente' && (
+                          <Button
+                            size="sm"
+                            disabled={enviando}
+                            className="bg-[#1E3A8A] hover:bg-[#1E2A6B]"
+                            onClick={() =>
+                              acaoPendencia(() => receberAtividade(a.id), 'Recebimento confirmado.')
+                            }
+                          >
+                            Confirmar recebimento
+                          </Button>
+                        )}
+                        {ehCoordOuAdmin && a.status === 'pendente' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={enviando || devolucao.trim().length < 3}
+                            title="Informe a justificativa no campo abaixo"
+                            onClick={() =>
+                              acaoPendencia(
+                                () => cancelarAtividade(a.id, devolucao.trim()),
+                                'Pendência cancelada.',
+                              )
+                            }
+                          >
+                            Cancelar pendência
+                          </Button>
+                        )}
+                      </div>
+                      {(podeDevolver || (ehCoordOuAdmin && a.status === 'pendente')) && (
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <Input
+                            value={devolucao}
+                            onChange={(e) => setDevolucao(e.target.value)}
+                            placeholder="Justificativa (devolver ou cancelar)"
+                            maxLength={1000}
+                            className="bg-white"
+                          />
+                          {podeDevolver && (
+                            <Button
+                              variant="outline"
+                              disabled={enviando || devolucao.trim().length < 3}
+                              className="gap-1 bg-white"
+                              onClick={() =>
+                                acaoPendencia(
+                                  () => devolverAtividade(a.id, devolucao.trim()),
+                                  'Devolvido para a etapa anterior.',
+                                )
+                              }
+                            >
+                              <Undo2 className="w-4 h-4" /> Devolver para{' '}
+                              {nomeEtapa(a.etapa_origem)}
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             )}
 
@@ -943,6 +1086,7 @@ function CardDialog({
 }
 
 const HERDAR = '__herdar__'
+const SEM_REVISOR = '__sem_revisor__'
 
 function AtribuicaoDialog({
   card,
@@ -955,6 +1099,7 @@ function AtribuicaoDialog({
 }) {
   const [pessoas, setPessoas] = useState<PessoaAtribuivel[]>([])
   const [resp, setResp] = useState(card.responsavel?.id ?? HERDAR)
+  const [revisor, setRevisor] = useState(card.revisor?.id ?? SEM_REVISOR)
   const [prio, setPrio] = useState(card.prioridade_propria ? card.prioridade : HERDAR)
   const [prazo, setPrazo] = useState(card.prazo_proprio ? card.prazo : '')
   const [just, setJust] = useState('')
@@ -968,8 +1113,11 @@ function AtribuicaoDialog({
   }, [])
 
   const salvar = async () => {
-    const campos: { responsavel?: string; prioridade?: string; prazo?: string } = {}
+    const campos: { responsavel?: string; revisor?: string; prioridade?: string; prazo?: string } =
+      {}
     if (resp !== (card.responsavel?.id ?? HERDAR)) campos.responsavel = resp === HERDAR ? '' : resp
+    if (revisor !== (card.revisor?.id ?? SEM_REVISOR))
+      campos.revisor = revisor === SEM_REVISOR ? '' : revisor
     const prioAtual = card.prioridade_propria ? card.prioridade : HERDAR
     if (prio !== prioAtual) campos.prioridade = prio === HERDAR ? '' : prio
     const prazoAtual = card.prazo_proprio ? card.prazo : ''
@@ -1003,7 +1151,7 @@ function AtribuicaoDialog({
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Reatribuir, prioridade e prazo</DialogTitle>
+          <DialogTitle>Responsável, revisor, prioridade e prazo</DialogTitle>
           <DialogDescription>
             {card.disciplina.nome} · {card.projeto.nome}. A alteração fica no histórico com antes,
             depois, autor e justificativa.
@@ -1031,6 +1179,31 @@ function AtribuicaoDialog({
               </SelectContent>
             </Select>
             {erros.responsavel && <p className="text-xs text-red-600 mt-1">{erros.responsavel}</p>}
+          </div>
+          <div>
+            <Label>Revisor (recebe a pendência em “Aguardando revisão”)</Label>
+            <Select value={revisor} onValueChange={setRevisor}>
+              <SelectTrigger className={erros.revisor ? 'border-red-500' : ''}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={SEM_REVISOR}>Sem revisor (vai ao coordenador)</SelectItem>
+                {card.revisor && !pessoas.some((p) => p.id === card.revisor?.id) && (
+                  <SelectItem value={card.revisor.id}>{card.revisor.nome}</SelectItem>
+                )}
+                {pessoas
+                  .filter(
+                    (p) =>
+                      p.papel === 'revisor' || p.papel === 'coordenador' || p.papel === 'admin',
+                  )
+                  .map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.nome}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+            {erros.revisor && <p className="text-xs text-red-600 mt-1">{erros.revisor}</p>}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>

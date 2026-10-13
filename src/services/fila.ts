@@ -3,7 +3,7 @@ import type { Pessoa } from '@/services/projetos'
 import type { Bloqueio } from '@/services/kanban'
 import type { Etapa } from '@/lib/fluxo'
 
-export type MotivoFila = 'responsavel' | 'revisao' | 'bloqueio'
+export type MotivoFila = 'responsavel' | 'revisao' | 'bloqueio' | 'handoff'
 
 export interface ItemFila {
   id: string
@@ -20,6 +20,15 @@ export interface ItemFila {
   atrasado: boolean
   bloqueado: boolean
   bloqueio: (Bloqueio & { vencido: boolean }) | null
+  atividade: {
+    id: string
+    status: 'pendente' | 'recebida'
+    etapa: string
+    precisa_ajuste: boolean
+    motivo_ajuste: string
+    remetente: Pessoa | null
+    created: string
+  } | null
   versao: string
   created: string
 }
@@ -72,4 +81,5 @@ export const MOTIVO_LABEL: Record<MotivoFila, string> = {
   responsavel: 'Responsável',
   revisao: 'Revisar',
   bloqueio: 'Resolver bloqueio',
+  handoff: 'Pendência recebida',
 }

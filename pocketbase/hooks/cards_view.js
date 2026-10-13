@@ -97,8 +97,62 @@ routerAdd(
         }
       })
 
+    // SPEC-1-005: pendências (handoffs) do card e, para quem coordena, os eventos de entrega
+    const atividades = $app
+      .findRecordsByFilter('atividades', 'card = {:c}', '-created', 200, 0, { c: card.id })
+      .map((a) => ({
+        id: a.id,
+        etapa: a.getString('etapa'),
+        etapa_origem: a.getString('etapa_origem'),
+        status: a.getString('status'),
+        destinatario: pessoa(a.getString('destinatario')),
+        remetente: pessoa(a.getString('remetente')),
+        precisa_ajuste: a.getBool('precisa_ajuste'),
+        motivo_ajuste: a.getString('motivo_ajuste'),
+        recebida_em: a.getString('recebida_em'),
+        encerrada_em: a.getString('encerrada_em'),
+        encerrada_por: pessoa(a.getString('encerrada_por')),
+        encerramento: a.getString('encerramento'),
+        created: a.getString('created'),
+      }))
+    const veEventos =
+      su ||
+      papel === 'admin' ||
+      (papel === 'coordenador' && projeto.getString('coordenador') === auth.id)
+    const handoffs = !veEventos
+      ? []
+      : $app
+          .findRecordsByFilter('handoff_eventos', 'card = {:c}', '-created', 200, 0, { c: card.id })
+          .map((h) => {
+            let hist = []
+            try {
+              hist = JSON.parse(h.getString('historico') || '[]') || []
+            } catch (_) {}
+            return {
+              id: h.id,
+              atividade: h.getString('atividade'),
+              etapa_origem: h.getString('etapa_origem'),
+              etapa_destino: h.getString('etapa_destino'),
+              status: h.getString('status'),
+              motivo: h.getString('motivo'),
+              proxima_acao: h.getString('proxima_acao'),
+              tentativas: h.getInt('tentativas'),
+              historico: hist.map((x) => ({
+                tentativa: x.tentativa,
+                em: x.em,
+                autor: pessoa(x.autor),
+                resultado: x.resultado,
+                motivo: x.motivo || '',
+              })),
+              created: h.getString('created'),
+            }
+          })
+
     return e.json(200, {
       id: card.id,
+      revisor: pessoa(card.getString('revisor')),
+      atividades: atividades,
+      handoffs: handoffs,
       etapa: card.getString('etapa'),
       bloqueado: bloqueado,
       bloqueio: bloqueado

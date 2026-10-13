@@ -309,6 +309,19 @@ function ListaItens({ itens, vazio }: { itens: ItemFila[]; vazio: string }) {
               <span className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-[#1E3A8A] border border-blue-100">
                 {i.etapa_nome}
               </span>
+              {i.atividade?.precisa_ajuste && (
+                <span
+                  className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800"
+                  title={i.atividade.motivo_ajuste}
+                >
+                  Ajuste necessário
+                </span>
+              )}
+              {i.atividade && !i.atividade.precisa_ajuste && i.atividade.status === 'pendente' && (
+                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#1E3A8A] text-white">
+                  Nova
+                </span>
+              )}
               <span className="sm:ml-auto flex flex-wrap gap-1">
                 {i.motivos.map((m) => (
                   <span
