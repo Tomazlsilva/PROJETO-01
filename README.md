@@ -1,6 +1,6 @@
-# Projeto Criado com o Skip
+# CMX - Gavazzi
 
-Este projeto foi criado de ponta a ponta com o [Skip](https://goskip.dev).
+Sistema de Gestão de Projetos e Engenharia Gavazzi, desenvolvido na plataforma [Skip](https://goskip.dev).
 
 ## 🚀 Stack Tecnológica
 
