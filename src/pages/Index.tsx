@@ -14,14 +14,7 @@ const REMEMBER_EMAIL_KEY = 'cmx_remember_email'
 
 export default function Index() {
   const navigate = useNavigate()
-  const {
-    login,
-    loginWithProvider,
-    listLoginProviders,
-    isAuthenticated,
-    isLoading: authChecking,
-  } = useAuth()
-  const [provedores, setProvedores] = useState<{ name: string; displayName: string }[]>([])
+  const { login, loginWithProvider, isAuthenticated, isLoading: authChecking } = useAuth()
   const [entrandoCom, setEntrandoCom] = useState<string | null>(null)
 
   // Form states
@@ -61,32 +54,18 @@ export default function Index() {
     }
   }, [])
 
-  // Botões de login por conta corporativa (aparecem quando configurados no Skip Cloud)
-  useEffect(() => {
-    void listLoginProviders().then(setProvedores)
-  }, [listLoginProviders])
-
-  // Sem provedor configurado ainda, o botão aparece mas só avisa
-  const botoesLogin = provedores.length > 0 ? provedores : [{ name: '', displayName: 'Microsoft' }]
-
-  const entrarComProvedor = async (provider: string) => {
+  const entrarComMicrosoft = async () => {
     setServerError(null)
-    if (!provider) {
-      setServerError(
-        'O login com a conta Microsoft ainda está sendo configurado. Por enquanto, entre com e-mail e senha.',
-      )
-      return
-    }
-    setEntrandoCom(provider)
+    setEntrandoCom('microsoft')
     try {
-      await loginWithProvider(provider)
+      await loginWithProvider('microsoft')
       navigate('/dashboard')
     } catch (err: unknown) {
       const status = (err as { status?: number })?.status
       setServerError(
         status === 400
           ? 'Acesso não liberado para esta conta. Fale com o administrador.'
-          : 'Não foi possível entrar com a conta corporativa. Se a janela foi bloqueada, permita pop-ups e tente de novo.',
+          : 'Não foi possível entrar com a Microsoft. Tente novamente.',
       )
     } finally {
       setEntrandoCom(null)
@@ -273,39 +252,6 @@ export default function Index() {
             </div>
           )}
 
-          {/* Login pela conta corporativa (Microsoft) */}
-          {botoesLogin.length > 0 && (
-            <div className="mb-6 space-y-3">
-              {botoesLogin.map((p) => (
-                <Button
-                  key={p.name || 'microsoft'}
-                  type="button"
-                  variant="outline"
-                  disabled={isSubmitting || entrandoCom !== null}
-                  onClick={() => void entrarComProvedor(p.name)}
-                  className="w-full h-12 text-[15px] font-semibold border-slate-300 rounded-lg flex items-center justify-center gap-2.5"
-                >
-                  {entrandoCom !== null && entrandoCom === p.name ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <svg viewBox="0 0 21 21" className="w-4 h-4" aria-hidden="true">
-                      <rect x="1" y="1" width="9" height="9" fill="#F25022" />
-                      <rect x="11" y="1" width="9" height="9" fill="#7FBA00" />
-                      <rect x="1" y="11" width="9" height="9" fill="#00A4EF" />
-                      <rect x="11" y="11" width="9" height="9" fill="#FFB900" />
-                    </svg>
-                  )}
-                  <span>Entrar com {p.displayName || 'Microsoft'}</span>
-                </Button>
-              ))}
-              <div className="flex items-center gap-3 text-xs text-slate-400">
-                <span className="flex-1 h-px bg-slate-200" />
-                ou entre com e-mail e senha
-                <span className="flex-1 h-px bg-slate-200" />
-              </div>
-            </div>
-          )}
-
           {/* Formulário */}
           <form onSubmit={handleSubmit} noValidate className="space-y-5">
             {/* Campo E-mail */}
@@ -422,10 +368,10 @@ export default function Index() {
             </div>
 
             {/* Botão Submit "Entrar" */}
-            <div className="pt-2">
+            <div className="pt-2 space-y-4">
               <Button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || entrandoCom !== null}
                 className="w-full h-12 bg-[#1E3A8A] hover:bg-[#1E2A6B] active:scale-[0.98] text-white font-semibold text-[15px] rounded-lg shadow-[0_4px_12px_rgba(30,58,138,0.25)] hover:shadow-[0_6px_16px_rgba(30,58,138,0.35)] hover:scale-[1.01] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-70 disabled:hover:scale-100 disabled:shadow-none"
               >
                 {isSubmitting ? (
@@ -437,6 +383,44 @@ export default function Index() {
                   <>
                     <span>Entrar</span>
                     <ArrowRight className="w-4 h-4 ml-0.5 opacity-80" />
+                  </>
+                )}
+              </Button>
+
+              {/* Separador "ou" */}
+              <div className="relative flex items-center justify-center py-1">
+                <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                  <div className="w-full border-t border-slate-200" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-white px-3 text-slate-400 font-medium tracking-wider">
+                    ou
+                  </span>
+                </div>
+              </div>
+
+              {/* Botão "Entrar com Microsoft" */}
+              <Button
+                type="button"
+                variant="outline"
+                disabled={isSubmitting || entrandoCom !== null}
+                onClick={() => void entrarComMicrosoft()}
+                className="w-full h-12 text-[15px] font-semibold bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900 border-slate-300 rounded-lg flex items-center justify-center gap-3 transition-colors shadow-sm disabled:opacity-70"
+              >
+                {entrandoCom === 'microsoft' ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-slate-600" />
+                    <span>Conectando à Microsoft...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg viewBox="0 0 21 21" className="w-4 h-4 shrink-0" aria-hidden="true">
+                      <rect x="1" y="1" width="9" height="9" fill="#F25022" />
+                      <rect x="11" y="1" width="9" height="9" fill="#7FBA00" />
+                      <rect x="1" y="11" width="9" height="9" fill="#00A4EF" />
+                      <rect x="11" y="11" width="9" height="9" fill="#FFB900" />
+                    </svg>
+                    <span>Entrar com Microsoft</span>
                   </>
                 )}
               </Button>
