@@ -233,14 +233,14 @@ export default function Index() {
           <div className="space-y-4">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/15 text-blue-300 text-xs font-semibold tracking-wide border border-blue-400/25">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              CRM de Alta Performance para Engenharia e Vendas
+              Gavazzi Engenharia · Produção técnica
             </div>
             <h1 className="text-3xl xl:text-4xl font-extrabold tracking-[-0.03em] leading-tight text-white">
-              Centralize sua operação comercial em um pipeline inteligente.
+              Central de Gestão da Produção Técnica.
             </h1>
             <p className="text-slate-400 text-base leading-relaxed">
-              Monitore oportunidades, acelere o fechamento de propostas e tome decisões
-              fundamentadas com métricas em tempo real.
+              Projetos, etapas, responsáveis e prazos de todas as disciplinas em um só lugar, com o
+              histórico de cada passo.
             </p>
           </div>
 
@@ -252,10 +252,11 @@ export default function Index() {
               </div>
               <div>
                 <h2 className="text-sm font-semibold text-white">
-                  Visão completa do funil de vendas
+                  Projetos e disciplinas em um só lugar
                 </h2>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  Previsibilidade de faturamento com etapas claras do primeiro contato à assinatura.
+                  Cliente, prazo, prioridade e responsável de cada disciplina, do cadastro à
+                  emissão.
                 </p>
               </div>
             </div>
@@ -265,9 +266,10 @@ export default function Index() {
                 <Zap className="w-5 h-5 text-blue-400" />
               </div>
               <div>
-                <h2 className="text-sm font-semibold text-white">Agilidade no relacionamento</h2>
+                <h2 className="text-sm font-semibold text-white">Passagem entre disciplinas</h2>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  Histórico unificado de conversas, propostas emitidas e follow-ups automatizados.
+                  Cada etapa concluída chega ao próximo responsável, com histórico de quem fez o
+                  quê.
                 </p>
               </div>
             </div>
@@ -277,9 +279,9 @@ export default function Index() {
                 <ShieldCheck className="w-5 h-5 text-blue-400" />
               </div>
               <div>
-                <h2 className="text-sm font-semibold text-white">Segurança corporativa avançada</h2>
+                <h2 className="text-sm font-semibold text-white">Acesso com a conta da empresa</h2>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  Controle de acesso granular e proteção de dados críticos dos seus clientes.
+                  Cada pessoa vê só o que o seu papel permite, com auditoria de todos os acessos.
                 </p>
               </div>
             </div>
@@ -288,8 +290,8 @@ export default function Index() {
 
         {/* Rodapé da coluna esquerda */}
         <div className="relative z-10 pt-6 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-500">
-          <span>&copy; {new Date().getFullYear()} CMX CRM. Todos os direitos reservados.</span>
-          <span className="font-mono text-[11px] text-slate-400">v2.4 Enterprise</span>
+          <span>&copy; {new Date().getFullYear()} Gavazzi Engenharia</span>
+          <span className="text-[11px] text-slate-400">Central Gavazzi</span>
         </div>
       </div>
 
@@ -317,7 +319,7 @@ export default function Index() {
               Acesse sua conta
             </h2>
             <p className="text-sm text-[#64748B] leading-relaxed">
-              Bem-vindo ao CMX. Insira suas credenciais para gerenciar suas negociações.
+              Bem-vindo à Central Gavazzi. Entre para acompanhar seus projetos.
             </p>
           </div>
 
