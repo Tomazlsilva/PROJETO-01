@@ -1,4 +1,4 @@
-// SPEC-1-001 — criação de usuários: somente administrador ativo, senha >= 12,
+// SPEC-1-001 — criação de usuários: somente administrador ativo, senha opcional (>= 8 se informada),
 // papel obrigatório e válido, campos de controle nunca vêm do cliente. Auditado.
 onRecordCreateRequest((e) => {
   const audit = (action, outcome, targetId, details) => {
@@ -24,8 +24,12 @@ onRecordCreateRequest((e) => {
     }
   }
 
+  // Senha é opcional: sem ela, a pessoa entra com a conta Microsoft ou define a
+  // própria senha por "Esqueci a senha". Uma senha aleatória e desconhecida é gravada.
   const password = typeof body.password === 'string' ? body.password : ''
-  if (password.length < 8) {
+  if (password === '') {
+    e.record.setPassword($security.randomString(40))
+  } else if (password.length < 8) {
     throw new BadRequestError('A senha deve ter pelo menos 8 caracteres.')
   }
   const roles = ['admin', 'coordenador', 'projetista', 'revisor', 'executivo']

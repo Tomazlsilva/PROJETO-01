@@ -24,7 +24,15 @@ const REMEMBER_EMAIL_KEY = 'cmx_remember_email'
 
 export default function Index() {
   const navigate = useNavigate()
-  const { login, isAuthenticated, isLoading: authChecking } = useAuth()
+  const {
+    login,
+    loginWithProvider,
+    listLoginProviders,
+    isAuthenticated,
+    isLoading: authChecking,
+  } = useAuth()
+  const [provedores, setProvedores] = useState<{ name: string; displayName: string }[]>([])
+  const [entrandoCom, setEntrandoCom] = useState<string | null>(null)
 
   // Form states
   const [email, setEmail] = useState('')
@@ -62,6 +70,29 @@ export default function Index() {
       // armazenamento indisponível
     }
   }, [])
+
+  // Botões de login por conta corporativa (aparecem quando configurados no Skip Cloud)
+  useEffect(() => {
+    void listLoginProviders().then(setProvedores)
+  }, [listLoginProviders])
+
+  const entrarComProvedor = async (provider: string) => {
+    setServerError(null)
+    setEntrandoCom(provider)
+    try {
+      await loginWithProvider(provider)
+      navigate('/dashboard')
+    } catch (err: unknown) {
+      const status = (err as { status?: number })?.status
+      setServerError(
+        status === 400
+          ? 'Acesso não liberado para esta conta. Fale com o administrador.'
+          : 'Não foi possível entrar com a conta corporativa. Se a janela foi bloqueada, permita pop-ups e tente de novo.',
+      )
+    } finally {
+      setEntrandoCom(null)
+    }
+  }
 
   // Carrega e-mail persistido do localStorage
   useEffect(() => {
@@ -289,6 +320,39 @@ export default function Index() {
             >
               <AlertCircle className="w-5 h-5 shrink-0 text-red-500 mt-0.5" />
               <div className="flex-1 leading-snug font-medium">{serverError}</div>
+            </div>
+          )}
+
+          {/* Login pela conta corporativa (Microsoft) */}
+          {provedores.length > 0 && (
+            <div className="mb-6 space-y-3">
+              {provedores.map((p) => (
+                <Button
+                  key={p.name}
+                  type="button"
+                  variant="outline"
+                  disabled={isSubmitting || entrandoCom !== null}
+                  onClick={() => void entrarComProvedor(p.name)}
+                  className="w-full h-12 text-[15px] font-semibold border-slate-300 rounded-lg flex items-center justify-center gap-2.5"
+                >
+                  {entrandoCom === p.name ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <svg viewBox="0 0 21 21" className="w-4 h-4" aria-hidden="true">
+                      <rect x="1" y="1" width="9" height="9" fill="#F25022" />
+                      <rect x="11" y="1" width="9" height="9" fill="#7FBA00" />
+                      <rect x="1" y="11" width="9" height="9" fill="#00A4EF" />
+                      <rect x="11" y="11" width="9" height="9" fill="#FFB900" />
+                    </svg>
+                  )}
+                  <span>Entrar com {p.displayName || 'Microsoft'}</span>
+                </Button>
+              ))}
+              <div className="flex items-center gap-3 text-xs text-slate-400">
+                <span className="flex-1 h-px bg-slate-200" />
+                ou entre com e-mail e senha
+                <span className="flex-1 h-px bg-slate-200" />
+              </div>
             </div>
           )}
 

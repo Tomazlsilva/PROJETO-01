@@ -15,6 +15,8 @@ interface AuthContextType {
   isLoading: boolean
   isAuthenticated: boolean
   login: (email: string, pass: string) => Promise<RecordModel>
+  loginWithProvider: (provider: string) => Promise<RecordModel>
+  listLoginProviders: () => Promise<{ name: string; displayName: string }[]>
   logout: () => void
   requestPasswordReset: (email: string) => Promise<void>
   confirmPasswordReset: (token: string, password: string, passwordConfirm: string) => Promise<void>
@@ -107,6 +109,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return authData.record
   }
 
+  // Login pela conta Microsoft (ou outro provedor configurado no Skip Cloud).
+  // Só entra quem o administrador cadastrou; as regras ficam no servidor.
+  const loginWithProvider = async (provider: string): Promise<RecordModel> => {
+    const authData = await pb.collection('users').authWithOAuth2({ provider })
+    setUser(authData.record)
+    return authData.record
+  }
+
+  const listLoginProviders = useCallback(async () => {
+    try {
+      const m = await pb.collection('users').listAuthMethods()
+      if (!m.oauth2?.enabled) return []
+      return (m.oauth2.providers || []).map((p) => ({ name: p.name, displayName: p.displayName }))
+    } catch {
+      return []
+    }
+  }, [])
+
   const logout = () => endSession()
 
   const requestPasswordReset = async (email: string): Promise<void> => {
@@ -132,6 +152,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isLoading,
         isAuthenticated: !!user && pb.authStore.isValid,
         login,
+        loginWithProvider,
+        listLoginProviders,
         logout,
         requestPasswordReset,
         confirmPasswordReset,

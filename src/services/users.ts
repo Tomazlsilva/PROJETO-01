@@ -15,10 +15,14 @@ export interface UserRecord extends RecordModel {
 export const listUsers = () =>
   pb.collection('users').getFullList<UserRecord>({ sort: 'name,email' })
 
+// Senha opcional: em branco, o servidor grava uma senha aleatória desconhecida e a
+// pessoa entra pela conta Microsoft ou define a senha em "Esqueci a senha".
 export const createUser = (data: { name: string; email: string; role: Role; password: string }) =>
   pb.collection('users').create<UserRecord>({
-    ...data,
-    passwordConfirm: data.password,
+    name: data.name,
+    email: data.email,
+    role: data.role,
+    ...(data.password ? { password: data.password, passwordConfirm: data.password } : {}),
     active: true,
     verified: true,
     emailVisibility: false,

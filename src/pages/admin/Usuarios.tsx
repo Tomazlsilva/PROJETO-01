@@ -252,14 +252,18 @@ function NovoUsuarioDialog({
   }, [open])
 
   const salvar = async () => {
-    if (password.length < 8) {
-      toast.error('A senha deve ter pelo menos 8 caracteres.')
+    if (password !== '' && password.length < 8) {
+      toast.error('A senha deve ter pelo menos 8 caracteres, ou deixe em branco.')
       return
     }
     setSalvando(true)
     try {
       await createUser({ name: name.trim(), email: email.trim(), role, password })
-      toast.success('Usuário criado. Entregue a senha temporária por um canal seguro.')
+      toast.success(
+        password
+          ? 'Usuário criado. Entregue a senha temporária por um canal seguro.'
+          : 'Usuário liberado. A pessoa entra com a conta Microsoft ou cria a senha em "Esqueci a senha".',
+      )
       onOpenChange(false)
       onCreated()
     } catch (err) {
@@ -308,7 +312,7 @@ function NovoUsuarioDialog({
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="nu-senha">Senha temporária (mínimo 8)</Label>
+            <Label htmlFor="nu-senha">Senha temporária (opcional, mínimo 8)</Label>
             <div className="flex gap-2">
               <Input
                 id="nu-senha"
@@ -321,7 +325,8 @@ function NovoUsuarioDialog({
               </Button>
             </div>
             <p className="text-xs text-slate-500">
-              Oriente a pessoa a trocar pela opção “Esqueci a senha” no primeiro acesso.
+              Pode deixar em branco: a pessoa entra com a conta Microsoft da empresa ou cria a
+              própria senha em “Esqueci a senha”.
             </p>
           </div>
         </div>
