@@ -27,6 +27,8 @@ export interface DisciplinaDoProjeto {
   disciplina: { id: string; nome: string; sigla: string; personalizada?: boolean }
   responsavel: Pessoa | null
   herdado: boolean
+  etapa?: string
+  bloqueado?: boolean
 }
 
 export interface EventoHistorico {

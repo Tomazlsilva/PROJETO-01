@@ -76,6 +76,8 @@ routerAdd(
           disciplina: d,
           responsavel: pessoa(r.getString('responsavel')),
           herdado: r.getBool('responsavel_herdado'),
+          etapa: r.getString('etapa'),
+          bloqueado: r.getBool('bloqueado'),
         }
       })
 

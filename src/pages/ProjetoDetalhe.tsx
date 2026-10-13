@@ -7,6 +7,7 @@ import {
   Download,
   ExternalLink,
   History,
+  KanbanSquare,
   Loader2,
   MessageSquareText,
   Pencil,
@@ -37,6 +38,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext'
 import { AcessoNegado } from '@/components/AppShell'
 import { canWriteReview } from '@/lib/permissions'
+import { NOME_PADRAO, type Etapa } from '@/lib/fluxo'
 import { extractFieldErrors, getErrorMessage } from '@/lib/pocketbase/errors'
 import {
   PRIORIDADES,
@@ -263,11 +265,25 @@ export default function ProjetoDetalhe() {
             <Users className="w-5 h-5 text-[#1E3A8A]" />
             <h2 className="text-base font-bold text-slate-900">Disciplinas e responsáveis</h2>
           </div>
-          {editavel && (
-            <Button size="sm" variant="outline" className="gap-1" onClick={() => setIncluir(true)}>
-              <Plus className="w-4 h-4" /> Disciplina
-            </Button>
-          )}
+          <div className="flex gap-2">
+            {!p.arquivado && (
+              <Button size="sm" variant="outline" className="gap-1" asChild>
+                <Link to={`/kanban?projeto=${p.id}`}>
+                  <KanbanSquare className="w-4 h-4" /> Ver no Kanban
+                </Link>
+              </Button>
+            )}
+            {editavel && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1"
+                onClick={() => setIncluir(true)}
+              >
+                <Plus className="w-4 h-4" /> Disciplina
+              </Button>
+            )}
+          </div>
         </div>
         <ul className="divide-y divide-slate-100">
           {p.detalhe.disciplinas.map((d) => (
@@ -277,6 +293,16 @@ export default function ProjetoDetalhe() {
                 {d.disciplina.personalizada && (
                   <span className="ml-2 text-xs font-normal px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
                     personalizada
+                  </span>
+                )}
+                {d.etapa && (
+                  <span className="ml-2 text-xs font-normal px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                    {NOME_PADRAO[d.etapa as Etapa] ?? d.etapa}
+                  </span>
+                )}
+                {d.bloqueado && (
+                  <span className="ml-2 text-xs font-normal px-2 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200">
+                    bloqueado
                   </span>
                 )}
               </span>

@@ -11,6 +11,8 @@ import ProjetoDetalhe from './pages/ProjetoDetalhe'
 import ProjetoNovo from './pages/ProjetoNovo'
 import Usuarios from './pages/admin/Usuarios'
 import Auditoria from './pages/admin/Auditoria'
+import Fluxo from './pages/admin/Fluxo'
+import Kanban from './pages/Kanban'
 import Layout from './components/Layout'
 import AppShell from './components/AppShell'
 
@@ -31,9 +33,13 @@ const App = () => (
             <Route path="/projetos/novo" element={<ProjetoNovo />} />
             <Route path="/projetos/:id" element={<ProjetoDetalhe />} />
           </Route>
+          <Route element={<AppShell largo />}>
+            <Route path="/kanban" element={<Kanban />} />
+          </Route>
           <Route element={<AppShell roles={['admin']} />}>
             <Route path="/admin/usuarios" element={<Usuarios />} />
             <Route path="/admin/auditoria" element={<Auditoria />} />
+            <Route path="/admin/fluxo" element={<Fluxo />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES MUST BE ADDED HERE */}
         </Route>

@@ -1,6 +1,15 @@
 import React, { useEffect } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { LogOut, User, LayoutDashboard, Users, ScrollText, Loader2 } from 'lucide-react'
+import {
+  LogOut,
+  User,
+  LayoutDashboard,
+  Users,
+  ScrollText,
+  Loader2,
+  KanbanSquare,
+  Workflow,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { CmxLogo } from '@/components/CmxLogo'
 import { useAuth } from '@/contexts/AuthContext'
@@ -8,11 +17,13 @@ import { ROLE_LABEL, type Role } from '@/lib/permissions'
 
 interface AppShellProps {
   roles?: Role[]
+  // páginas largas (Kanban) usam a largura toda da tela
+  largo?: boolean
 }
 
 // Casca das páginas autenticadas: exige sessão e, opcionalmente, papéis.
 // Esconder na interface é conveniência; quem bloqueia de fato é o servidor.
-export default function AppShell({ roles }: AppShellProps) {
+export default function AppShell({ roles, largo }: AppShellProps) {
   const { user, role, isAdmin, isAuthenticated, isLoading, logout } = useAuth()
   const navigate = useNavigate()
 
@@ -47,10 +58,16 @@ export default function AppShell({ roles }: AppShellProps) {
             <NavLink to="/dashboard" className={navClass}>
               <LayoutDashboard className="w-4 h-4" /> Início
             </NavLink>
+            <NavLink to="/kanban" className={navClass}>
+              <KanbanSquare className="w-4 h-4" /> Kanban
+            </NavLink>
             {isAdmin && (
               <>
                 <NavLink to="/admin/usuarios" className={navClass}>
                   <Users className="w-4 h-4" /> Usuários
+                </NavLink>
+                <NavLink to="/admin/fluxo" className={navClass}>
+                  <Workflow className="w-4 h-4" /> Fluxo
                 </NavLink>
                 <NavLink to="/admin/auditoria" className={navClass}>
                   <ScrollText className="w-4 h-4" /> Auditoria
@@ -81,20 +98,30 @@ export default function AppShell({ roles }: AppShellProps) {
           </Button>
         </div>
       </header>
-      {isAdmin && (
-        <nav className="md:hidden flex gap-1 px-4 py-2 bg-white border-b border-slate-200 overflow-x-auto">
-          <NavLink to="/dashboard" className={navClass}>
-            Início
-          </NavLink>
-          <NavLink to="/admin/usuarios" className={navClass}>
-            Usuários
-          </NavLink>
-          <NavLink to="/admin/auditoria" className={navClass}>
-            Auditoria
-          </NavLink>
-        </nav>
-      )}
-      <main className="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-8">
+      <nav className="md:hidden flex gap-1 px-4 py-2 bg-white border-b border-slate-200 overflow-x-auto">
+        <NavLink to="/dashboard" className={navClass}>
+          Início
+        </NavLink>
+        <NavLink to="/kanban" className={navClass}>
+          Kanban
+        </NavLink>
+        {isAdmin && (
+          <>
+            <NavLink to="/admin/usuarios" className={navClass}>
+              Usuários
+            </NavLink>
+            <NavLink to="/admin/fluxo" className={navClass}>
+              Fluxo
+            </NavLink>
+            <NavLink to="/admin/auditoria" className={navClass}>
+              Auditoria
+            </NavLink>
+          </>
+        )}
+      </nav>
+      <main
+        className={`flex-1 w-full mx-auto p-4 sm:p-8 min-w-0 ${largo ? 'max-w-[1800px]' : 'max-w-6xl'}`}
+      >
         {allowed ? <Outlet /> : <AcessoNegado />}
       </main>
     </div>
