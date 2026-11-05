@@ -790,8 +790,8 @@ function CardDialog({
                 <Link to={`/projetos/${d.projeto.id}`} className="text-[#1E3A8A] hover:underline">
                   {d.projeto.nome}
                 </Link>{' '}
-                · Responsável: {d.responsavel?.nome ?? '—'} · Revisor:{' '}
-                {d.revisor?.nome ?? 'não definido'}
+                · Responsável: {d.responsavel?.nome ?? '—'} · Revisão técnica: coordenador do
+                projeto
               </DialogDescription>
             </DialogHeader>
 
@@ -830,7 +830,7 @@ function CardDialog({
                   className="gap-1 h-7 text-[#1E3A8A]"
                   onClick={() => setEditar(true)}
                 >
-                  <Pencil className="w-3.5 h-3.5" /> Responsável, revisor, prioridade e prazo
+                  <Pencil className="w-3.5 h-3.5" /> Responsável, prioridade e prazo
                 </Button>
               )}
             </div>
@@ -1043,7 +1043,7 @@ function CardDialog({
               etapa={d.etapa}
               podeApontar={
                 !!ctx &&
-                ctx.role !== 'executivo' &&
+                ctx.role !== 'administrativo' &&
                 !d.projeto.arquivado &&
                 (ctx.role === 'admin' ||
                   ctx.coordenadorId === userId ||
@@ -1132,8 +1132,7 @@ function AtribuicaoDialog({
     const campos: { responsavel?: string; revisor?: string; prioridade?: string; prazo?: string } =
       {}
     if (resp !== (card.responsavel?.id ?? HERDAR)) campos.responsavel = resp === HERDAR ? '' : resp
-    if (revisor !== (card.revisor?.id ?? SEM_REVISOR))
-      campos.revisor = revisor === SEM_REVISOR ? '' : revisor
+
     const prioAtual = card.prioridade_propria ? card.prioridade : HERDAR
     if (prio !== prioAtual) campos.prioridade = prio === HERDAR ? '' : prio
     const prazoAtual = card.prazo_proprio ? card.prazo : ''
@@ -1167,7 +1166,7 @@ function AtribuicaoDialog({
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>Responsável, revisor, prioridade e prazo</DialogTitle>
+          <DialogTitle>Responsável, prioridade e prazo</DialogTitle>
           <DialogDescription>
             {card.disciplina.nome} · {card.projeto.nome}. A alteração fica no histórico com antes,
             depois, autor e justificativa.
@@ -1196,31 +1195,9 @@ function AtribuicaoDialog({
             </Select>
             {erros.responsavel && <p className="text-xs text-red-600 mt-1">{erros.responsavel}</p>}
           </div>
-          <div>
-            <Label>Revisor (recebe a pendência em “Aguardando revisão”)</Label>
-            <Select value={revisor} onValueChange={setRevisor}>
-              <SelectTrigger className={erros.revisor ? 'border-red-500' : ''}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={SEM_REVISOR}>Sem revisor (vai ao coordenador)</SelectItem>
-                {card.revisor && !pessoas.some((p) => p.id === card.revisor?.id) && (
-                  <SelectItem value={card.revisor.id}>{card.revisor.nome}</SelectItem>
-                )}
-                {pessoas
-                  .filter(
-                    (p) =>
-                      p.papel === 'revisor' || p.papel === 'coordenador' || p.papel === 'admin',
-                  )
-                  .map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.nome}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-            {erros.revisor && <p className="text-xs text-red-600 mt-1">{erros.revisor}</p>}
-          </div>
+          <p className="text-xs text-slate-500">
+            A revisão técnica (“Aguardando revisão”) vai sempre para o coordenador do projeto.
+          </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <Label>Prioridade</Label>
