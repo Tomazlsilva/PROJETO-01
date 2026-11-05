@@ -85,8 +85,13 @@ export default function AppShell({ roles, largo }: AppShellProps) {
               </NavLink>
             )}
             {veBaseline && (
-              <NavLink to="/painel" className={navClass}>
+              <NavLink to="/painel" end className={navClass}>
                 <Gauge className="w-4 h-4" /> Painel
+              </NavLink>
+            )}
+            {veBaseline && (
+              <NavLink to="/painel/entregas" className={navClass}>
+                <BarChart3 className="w-4 h-4" /> Entregas
               </NavLink>
             )}
             {veBaseline && (
@@ -160,8 +165,13 @@ export default function AppShell({ roles, largo }: AppShellProps) {
           </NavLink>
         )}
         {veBaseline && (
-          <NavLink to="/painel" className={navClass}>
+          <NavLink to="/painel" end className={navClass}>
             Painel
+          </NavLink>
+        )}
+        {veBaseline && (
+          <NavLink to="/painel/entregas" className={navClass}>
+            Entregas
           </NavLink>
         )}
         {veBaseline && (

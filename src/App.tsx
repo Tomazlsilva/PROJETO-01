@@ -14,6 +14,7 @@ import Auditoria from './pages/admin/Auditoria'
 import Fluxo from './pages/admin/Fluxo'
 import Kanban from './pages/Kanban'
 import Calendario from './pages/Calendario'
+import PainelEntregas from './pages/PainelEntregas'
 import Fila from './pages/Fila'
 import Falhas from './pages/Falhas'
 import Baseline from './pages/Baseline'
@@ -52,6 +53,7 @@ const App = () => (
             <Route path="/mudancas" element={<Mudancas />} />
             <Route path="/baseline" element={<Baseline />} />
             <Route path="/painel" element={<Painel />} />
+            <Route path="/painel/entregas" element={<PainelEntregas />} />
           </Route>
           <Route element={<AppShell roles={['admin']} />}>
             <Route path="/admin/usuarios" element={<Usuarios />} />
