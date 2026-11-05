@@ -2,7 +2,6 @@ import React, { createContext, useCallback, useContext, useEffect, useRef, useSt
 import pb from '@/lib/pocketbase/client'
 import type { RecordModel } from 'pocketbase'
 import { asRole, type Role } from '@/lib/permissions'
-import { iniciarLoginOAuth2 } from '@/lib/oauth2'
 
 // Sessão (SPEC-1-001): validade absoluta de 8h definida no servidor no login.
 // A renovação troca o token (o anterior deixa de valer) e nunca estende as 8h.
@@ -111,22 +110,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }
 
   // Login pela conta Microsoft (ou outro provedor configurado no Skip Cloud).
-  // Fluxo em duas janelas sem realtime: o redirect_uri enviado à Microsoft é
-  // o host público da SPA (registrado no Portal Azure) e o popup troca o
-  // código diretamente com o PocketBase — ver src/lib/oauth2.ts.
-  // O authStore pode ter sido gravado pelo popup (mesma origem, mesma aba) ou
-  // chegar por postMessage: os dois caminhos terminam com a sessão salva.
+  // Fluxo padrão da versão v0.0.42: usa o método authWithOAuth2 do SDK do PocketBase
+  // em que o redirect_uri enviado ao provedor é o endpoint interno do backend
+  // (https://login-do-crm-921ce.shrd03.internal.goskip.dev/api/oauth2-redirect),
+  // que já está cadastrado no Portal Azure e não causa erro AADSTS50011.
   // Só entra quem o administrador cadastrou; as regras ficam no servidor.
   const loginWithProvider = async (provider: string): Promise<RecordModel> => {
-    if (pb.authStore.isValid) {
-      const record = pb.authStore.record
-      setUser(record)
-      return record
-    }
-    const retorno = await iniciarLoginOAuth2(provider)
-    pb.authStore.save(retorno.token, retorno.record)
-    setUser(retorno.record)
-    return retorno.record
+    const authData = await pb.collection('users').authWithOAuth2({ provider })
+    setUser(authData.record)
+    return authData.record
   }
 
   const listLoginProviders = useCallback(async () => {
