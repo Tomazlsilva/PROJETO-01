@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useRef, useSt
 import pb from '@/lib/pocketbase/client'
 import type { RecordModel } from 'pocketbase'
 import { asRole, type Role } from '@/lib/permissions'
+import { iniciarLoginOAuth2 } from '@/lib/oauth2'
 
 // Sessão (SPEC-1-001): validade absoluta de 8h definida no servidor no login.
 // A renovação troca o token (o anterior deixa de valer) e nunca estende as 8h.
@@ -110,18 +111,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }
 
   // Login pela conta Microsoft (ou outro provedor configurado no Skip Cloud).
+  // Fluxo em duas janelas sem realtime: o redirect_uri enviado à Microsoft é
+  // o host público da SPA (registrado no Portal Azure) e o popup troca o
+  // código diretamente com o PocketBase — ver src/lib/oauth2.ts.
   // Só entra quem o administrador cadastrou; as regras ficam no servidor.
   const loginWithProvider = async (provider: string): Promise<RecordModel> => {
-    const authData = await pb.collection('users').authWithOAuth2({
-      provider,
-      urlCallback: (url) => {
-        // Safari e iOS só abrem janelas fora de funções async: a janela é
-        // criada de forma síncrona, ainda no gesto do clique.
-        window.open(url, 'cmx_oauth2', 'width=500,height=700,popup=yes')
-      },
-    })
-    setUser(authData.record)
-    return authData.record
+    const retorno = await iniciarLoginOAuth2(provider)
+    pb.authStore.save(retorno.token, retorno.record)
+    setUser(retorno.record)
+    return retorno.record
   }
 
   const listLoginProviders = useCallback(async () => {
