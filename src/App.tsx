@@ -13,6 +13,7 @@ import Usuarios from './pages/admin/Usuarios'
 import Auditoria from './pages/admin/Auditoria'
 import Fluxo from './pages/admin/Fluxo'
 import Kanban from './pages/Kanban'
+import Calendario from './pages/Calendario'
 import Fila from './pages/Fila'
 import Falhas from './pages/Falhas'
 import Baseline from './pages/Baseline'
@@ -42,6 +43,7 @@ const App = () => (
           </Route>
           <Route element={<AppShell largo />}>
             <Route path="/kanban" element={<Kanban />} />
+            <Route path="/calendario" element={<Calendario />} />
           </Route>
           <Route element={<AppShell roles={['admin', 'coordenador']} />}>
             <Route path="/falhas" element={<Falhas />} />

@@ -15,6 +15,7 @@ import {
   Gauge,
   History,
   DatabaseBackup,
+  CalendarDays,
 } from 'lucide-react'
 import { TimerTopo } from '@/components/TimerTopo'
 import { Button } from '@/components/ui/button'
@@ -74,6 +75,9 @@ export default function AppShell({ roles, largo }: AppShellProps) {
             </NavLink>
             <NavLink to="/kanban" className={navClass}>
               <KanbanSquare className="w-4 h-4" /> Kanban
+            </NavLink>
+            <NavLink to="/calendario" className={navClass}>
+              <CalendarDays className="w-4 h-4" /> Calendário
             </NavLink>
             {veFalhas && (
               <NavLink to="/falhas" className={navClass}>
@@ -146,6 +150,9 @@ export default function AppShell({ roles, largo }: AppShellProps) {
         </NavLink>
         <NavLink to="/kanban" className={navClass}>
           Kanban
+        </NavLink>
+        <NavLink to="/calendario" className={navClass}>
+          Calendário
         </NavLink>
         {veFalhas && (
           <NavLink to="/falhas" className={navClass}>
