@@ -206,6 +206,8 @@ export default function ImportarPlanner() {
         <p className="text-xs text-slate-500">
           Nome como aparece no Planner → pessoa da Central. Sem pessoa, o nome fica como texto no
           card.
+          {st === 'gravado' &&
+            ' Com o lote já gravado, mudar aqui corrige na hora as pessoas das entregas importadas.'}
         </p>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
           {(s.nomes || []).map((n) => (
@@ -215,7 +217,7 @@ export default function ImportarPlanner() {
               </span>
               <Select
                 value={n.usuario?.id || SEM}
-                disabled={st !== 'simulado'}
+                disabled={st === 'desfeito'}
                 onValueChange={(v) => mapear(n.nome, v)}
               >
                 <SelectTrigger className={`h-8 flex-1 ${n.usuario ? '' : 'text-slate-400'}`}>

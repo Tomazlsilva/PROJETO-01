@@ -161,11 +161,8 @@ routerAdd(
     const status = lote.getString('status')
 
     if (acao === 'nomes') {
-      if (status !== 'simulado')
-        return e.json(409, {
-          code: 'lote_gravado',
-          message: 'O lote já foi gravado: a correspondência não muda mais.',
-        })
+      if (status === 'desfeito')
+        return e.json(409, { code: 'lote_desfeito', message: 'Este lote foi desfeito.' })
       const lista = $app.findRecordsByFilter(
         'planner_nomes',
         'lote = {:l} && nome = {:n}',
@@ -189,9 +186,72 @@ routerAdd(
             usuario: new ValidationError('invalido', 'Usuário inválido ou inativo.'),
           })
       }
-      lista[0].set('usuario', uid)
-      $app.save(lista[0])
-      return e.json(200, { nome: lista[0].getString('nome'), usuario: uid })
+      const nomeReg = lista[0].getString('nome')
+      const antigo = lista[0].getString('usuario')
+      let alteradas = 0
+      $app.runInTransaction((tx) => {
+        const reg = tx.findRecordById('planner_nomes', lista[0].id)
+        reg.set('usuario', uid)
+        tx.save(reg)
+        if (status !== 'gravado' || antigo === uid) return
+        // Lote já gravado: corrige as pessoas das entregas em que o nome aparece no Planner
+        for (const l of tx.findRecordsByFilter(
+          'planner_linhas',
+          "lote = {:l} && entrega != ''",
+          '',
+          0,
+          0,
+          {
+            l: lote.id,
+          },
+        )) {
+          let ps = []
+          try {
+            ps = JSON.parse(l.getString('pessoas') || '[]')
+          } catch (_) {}
+          if (ps.indexOf(nomeReg) < 0) continue
+          const eid = l.getString('entrega')
+          const filtro = antigo
+            ? 'entrega = {:e} && pessoa = {:u}'
+            : "entrega = {:e} && pessoa = '' && pessoa_texto = {:t}"
+          for (const a of tx.findRecordsByFilter('entrega_alocacoes', filtro, '', 1, 0, {
+            e: eid,
+            u: antigo,
+            t: nomeReg.slice(0, 80),
+          })) {
+            a.set('pessoa', uid)
+            a.set('pessoa_texto', uid ? '' : nomeReg.slice(0, 80))
+            tx.save(a)
+            alteradas++
+          }
+          // a pessoa passa a ver o projeto (membro), se ainda não for
+          if (uid) {
+            try {
+              const ent = tx.findRecordById('entregas', eid)
+              const p = tx.findRecordById('projetos', ent.getString('projeto'))
+              const membros = p.getStringSlice('membros')
+              if (
+                membros.indexOf(uid) < 0 &&
+                p.getString('coordenador') !== uid &&
+                membros.length < 50
+              ) {
+                membros.push(uid)
+                p.set('membros', membros)
+                tx.save(p)
+              }
+            } catch (_) {}
+          }
+        }
+      })
+      if (status === 'gravado')
+        auditar('importacao.planner.nome_corrigido', 'success', {
+          lote: lote.id,
+          nome: nomeReg,
+          antes: antigo,
+          depois: uid,
+          alocacoes: alteradas,
+        })
+      return e.json(200, { nome: nomeReg, usuario: uid, alocacoes_alteradas: alteradas })
     }
 
     if (body.confirmar !== true)
