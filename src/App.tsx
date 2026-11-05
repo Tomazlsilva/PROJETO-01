@@ -7,6 +7,7 @@ import Index from './pages/Index'
 import Dashboard from './pages/Dashboard'
 import NotFound from './pages/NotFound'
 import ResetPassword from './pages/ResetPassword'
+import OAuth2Redirect from './pages/OAuth2Redirect'
 import ProjetoDetalhe from './pages/ProjetoDetalhe'
 import ProjetoNovo from './pages/ProjetoNovo'
 import Usuarios from './pages/admin/Usuarios'
@@ -37,6 +38,7 @@ const App = () => (
         <Route element={<Layout />}>
           <Route path="/" element={<Index />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/api/oauth2-redirect" element={<OAuth2Redirect />} />
           <Route element={<AppShell />}>
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/projetos/novo" element={<ProjetoNovo />} />

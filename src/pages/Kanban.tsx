@@ -666,7 +666,7 @@ function CardDialog({
     !!ctx &&
     (ctx.role === 'admin' ||
       (ctx.role === 'coordenador' && ctx.coordenadorId === userId) ||
-      (d.bloqueio?.dono?.id === userId && ctx.role !== 'executivo'))
+      d.bloqueio?.dono?.id === userId)
 
   const desbloquear = async () => {
     if (!d) return

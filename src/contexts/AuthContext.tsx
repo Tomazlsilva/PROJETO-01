@@ -112,7 +112,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Login pela conta Microsoft (ou outro provedor configurado no Skip Cloud).
   // Só entra quem o administrador cadastrou; as regras ficam no servidor.
   const loginWithProvider = async (provider: string): Promise<RecordModel> => {
-    const authData = await pb.collection('users').authWithOAuth2({ provider })
+    const authData = await pb.collection('users').authWithOAuth2({
+      provider,
+      urlCallback: (url) => {
+        // Safari e iOS só abrem janelas fora de funções async: a janela é
+        // criada de forma síncrona, ainda no gesto do clique.
+        window.open(url, 'cmx_oauth2', 'width=500,height=700,popup=yes')
+      },
+    })
     setUser(authData.record)
     return authData.record
   }

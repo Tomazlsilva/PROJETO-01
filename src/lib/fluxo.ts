@@ -73,8 +73,8 @@ export interface ContextoMovimento {
 export function podeMover(classe: Classe, c: ContextoMovimento): boolean {
   const admin = c.role === 'admin'
   const coord = c.role === 'coordenador' && c.coordenadorId === c.userId
-  const resp = c.responsavelId === c.userId && c.role !== 'executivo'
-  const revisor = c.role === 'revisor' && c.membros.includes(c.userId)
+  const resp = c.responsavelId === c.userId
+  const revisor = false
   if (classe === 'exec') return admin || coord || resp
   if (classe === 'rev') return admin || coord || (revisor && !resp)
   return admin || coord
@@ -85,4 +85,4 @@ export const exigeJustificativa = (classe: Classe) => classe === 'reabrir' || cl
 export const podeBloquear = (c: ContextoMovimento) =>
   c.role === 'admin' ||
   (c.role === 'coordenador' && c.coordenadorId === c.userId) ||
-  (c.role !== 'executivo' && c.responsavelId === c.userId)
+  c.responsavelId === c.userId

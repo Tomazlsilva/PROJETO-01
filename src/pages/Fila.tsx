@@ -51,7 +51,7 @@ const SITUACOES: { valor: FiltrosFila['situacao']; rotulo: string }[] = [
 
 export default function Fila() {
   const { role } = useAuth()
-  const veEquipe = role === 'admin' || role === 'coordenador' || role === 'executivo'
+  const veEquipe = role === 'admin' || role === 'coordenador'
   const [aba, setAba] = useState<'minha' | 'equipe'>('minha')
   const [projeto, setProjeto] = useState('')
   const [prioridade, setPrioridade] = useState('')

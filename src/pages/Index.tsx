@@ -64,7 +64,7 @@ export default function Index() {
       const status = (err as { status?: number })?.status
       setServerError(
         status === 400
-          ? 'Acesso não liberado para esta conta. Fale com o administrador.'
+          ? 'Acesso não liberado. Fale com o administrador.'
           : 'Não foi possível entrar com a Microsoft. Tente novamente.',
       )
     } finally {
