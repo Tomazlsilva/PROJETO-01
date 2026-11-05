@@ -18,7 +18,46 @@ routerAdd(
       throw new UnauthorizedError('Sessão inválida ou expirada.')
     }
     const body = e.requestInfo().body || {}
-    const cardId = typeof body.card === 'string' ? body.card : ''
+    let cardId = typeof body.card === 'string' ? body.card : ''
+    // SPEC-1-008 (CA-1-008-11): apontamento ligado a uma entrega do calendário.
+    // Vindo do calendário (só "entrega"), o card é a disciplina da entrega em que a pessoa
+    // é responsável, ou a primeira da entrega.
+    const entregaPedida = typeof body.entrega === 'string' ? body.entrega : ''
+    let entregaRec = null
+    if (entregaPedida) {
+      try {
+        entregaRec = $app.findRecordById('entregas', entregaPedida)
+      } catch (_) {}
+      if (!entregaRec)
+        throw new BadRequestError('Revise os campos destacados.', {
+          entrega: new ValidationError('invalida', 'Entrega não encontrada.'),
+        })
+      const cardsDaEntrega = entregaRec.getStringSlice('disciplinas')
+      if (!cardId) {
+        for (const cid of cardsDaEntrega) {
+          try {
+            if (
+              $app.findRecordById('projeto_disciplinas', cid).getString('responsavel') === auth.id
+            ) {
+              cardId = cid
+              break
+            }
+          } catch (_) {}
+        }
+        if (!cardId && cardsDaEntrega.length > 0) cardId = cardsDaEntrega[0]
+        if (!cardId)
+          throw new BadRequestError('Revise os campos destacados.', {
+            entrega: new ValidationError(
+              'sem_disciplina',
+              'Esta entrega não tem disciplina ligada. Peça ao coordenador para ligar uma.',
+            ),
+          })
+      } else if (cardsDaEntrega.length > 0 && cardsDaEntrega.indexOf(cardId) < 0) {
+        throw new BadRequestError('Revise os campos destacados.', {
+          entrega: new ValidationError('outra_disciplina', 'A entrega não inclui esta disciplina.'),
+        })
+      }
+    }
     const negar = (motivo) => {
       try {
         const r = new Record($app.findCollectionByNameOrId('auth_audit'))
@@ -50,17 +89,62 @@ routerAdd(
     const participa =
       !!projeto &&
       (papel === 'admin' ||
-        (papel !== 'executivo' &&
+        (papel !== 'administrativo' &&
           (projeto.getString('coordenador') === auth.id ||
             projeto.getStringSlice('membros').indexOf(auth.id) >= 0 ||
-            card.getString('responsavel') === auth.id ||
-            card.getString('revisor') === auth.id)))
+            card.getString('responsavel') === auth.id)))
     if (!participa) negar('fora_do_projeto')
     if (projeto.getBool('arquivado'))
       return e.json(409, {
         code: 'projeto_arquivado',
         message: 'Projeto arquivado: não aceita apontamento.',
       })
+
+    // Entrega padrão (Kanban/Fila): a próxima em aberto que tenha a disciplina; senão a
+    // próxima em aberto do projeto. Entrega concluída não aceita apontamento.
+    const hojeBR = new Date(Date.now() - 3 * 3600000).toISOString().slice(0, 10)
+    if (entregaRec && entregaRec.getString('projeto') !== projeto.id)
+      negar('entrega_de_outro_projeto')
+    if (!entregaRec) {
+      const abertas = $app.findRecordsByFilter(
+        'entregas',
+        'projeto = {:p} && entregue = false',
+        'data',
+        0,
+        0,
+        { p: projeto.id },
+      )
+      const ordenadas = abertas
+        .filter((x) => x.getString('data').slice(0, 10) >= hojeBR)
+        .concat(abertas.filter((x) => x.getString('data').slice(0, 10) < hojeBR).reverse())
+      entregaRec =
+        ordenadas.find((x) => x.getStringSlice('disciplinas').indexOf(card.id) >= 0) ||
+        ordenadas.find((x) => x.getStringSlice('disciplinas').length === 0) ||
+        null
+    }
+    if (entregaRec && entregaRec.getBool('entregue'))
+      return e.json(409, {
+        code: 'entrega_concluida',
+        message: 'Esta entrega já foi marcada como entregue: não aceita apontamento.',
+      })
+    // Fora da janela: a pessoa tem janela definida nesta entrega e hoje está fora dela
+    let foraDaJanela = false
+    if (entregaRec) {
+      const janelas = $app.findRecordsByFilter(
+        'entrega_alocacoes',
+        'entrega = {:e} && pessoa = {:u} && janela_definida = true',
+        '',
+        0,
+        0,
+        { e: entregaRec.id, u: auth.id },
+      )
+      if (janelas.length > 0)
+        foraDaJanela = !janelas.some(
+          (j) =>
+            j.getString('inicio').slice(0, 10) <= hojeBR &&
+            j.getString('fim').slice(0, 10) >= hojeBR,
+        )
+    }
 
     // timers abertos há mais de 12h viram pendência de revisão (não bloqueiam o novo)
     const limite = new Date(Date.now() - 12 * 3600000).toISOString().replace('T', ' ')
@@ -102,6 +186,8 @@ routerAdd(
       categoria: t.getString('categoria'),
       status: t.getString('status'),
       inicio: t.getString('inicio'),
+      entrega: t.getString('entrega'),
+      fora_da_janela: t.getBool('fora_da_janela'),
     })
     let situacao = 'ok'
     let atualAberto = null
@@ -161,6 +247,8 @@ routerAdd(
         t.set('segmento_aberto_em', agora)
         t.set('inicio', agora)
         t.set('duracao_seg', 0)
+        if (entregaRec) t.set('entrega', entregaRec.id)
+        t.set('fora_da_janela', foraDaJanela)
         tx.save(t)
         novo = t
       })

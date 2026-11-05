@@ -48,7 +48,27 @@ export interface Entrega {
   minha_janela: Alocacao[]
   pode_editar: boolean
   versao: string
+  horas: HorasEntrega
 }
+
+export interface HorasEntrega {
+  total_seg: number
+  fora_da_janela: number
+  por_pessoa: { pessoa: Pessoa | null; seg: number }[]
+}
+
+export const horasTxt = (seg: number) => {
+  const h = Math.floor(seg / 3600)
+  const m = Math.round((seg % 3600) / 60)
+  return `${h}h${String(m).padStart(2, '0')}`
+}
+
+// Start no apontamento direto na entrega (o servidor escolhe a disciplina da pessoa)
+export const iniciarNaEntrega = (entrega: string, encerrarAnterior = false) =>
+  pb.send('/backend/v1/tempo/iniciar', {
+    method: 'POST',
+    body: { entrega, encerrar_anterior: encerrarAnterior },
+  })
 
 export interface Feriado {
   id: string

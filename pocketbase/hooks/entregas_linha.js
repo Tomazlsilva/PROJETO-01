@@ -97,6 +97,16 @@ routerAdd(
             fim: a.getString('fim').slice(0, 10),
             janela_definida: a.getBool('janela_definida'),
           })),
+        horas_seg: $app
+          .findRecordsByFilter(
+            'tempo_eventos',
+            "entrega = {:e} && status = 'encerrado' && excluido = false && substituido = false",
+            '',
+            0,
+            0,
+            { e: r.id },
+          )
+          .reduce((s, t) => s + t.getInt('duracao_seg'), 0),
         versao: r.getString('updated'),
       }))
     const historico = $app

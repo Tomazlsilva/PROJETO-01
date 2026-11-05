@@ -230,8 +230,31 @@ routerAdd(
           inicio: a.getString('inicio').slice(0, 10),
           fim: a.getString('fim').slice(0, 10),
         }))
+      // horas apontadas na entrega (CA-1-008-12): só apontamentos encerrados e vigentes
+      const porPessoa = {}
+      let totalSeg = 0
+      let foraJanela = 0
+      for (const t of $app.findRecordsByFilter(
+        'tempo_eventos',
+        "entrega = {:e} && status = 'encerrado' && excluido = false && substituido = false",
+        '',
+        0,
+        0,
+        { e: r.id },
+      )) {
+        const s = t.getInt('duracao_seg')
+        const u = t.getString('usuario')
+        totalSeg += s
+        porPessoa[u] = (porPessoa[u] || 0) + s
+        if (t.getBool('fora_da_janela')) foraJanela++
+      }
       entregas.push({
         id: r.id,
+        horas: {
+          total_seg: totalSeg,
+          fora_da_janela: foraJanela,
+          por_pessoa: Object.keys(porPessoa).map((u) => ({ pessoa: pessoa(u), seg: porPessoa[u] })),
+        },
         projeto: {
           id: p.id,
           nome: p.getString('nome'),

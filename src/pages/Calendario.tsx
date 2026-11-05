@@ -11,10 +11,13 @@ import {
   History,
   Loader2,
   Plus,
+  Play,
   Search,
+  Timer,
   Trash2,
   Users,
 } from 'lucide-react'
+import { EVENTO_TEMPO } from '@/components/TimerTopo'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -54,6 +57,8 @@ import {
   getCalendario,
   getLinhaDoTempo,
   hojeBR,
+  horasTxt,
+  iniciarNaEntrega,
   recusaDe,
   rotuloEntrega,
   segundaDe,
@@ -534,6 +539,20 @@ function EntregaDialog({
   onLinha: (projetoId: string) => void
 }) {
   const { executar, ocupado, dialogo } = useExecutor(onChanged)
+  const { role } = useAuth()
+  const [timerAberto, setTimerAberto] = useState(false)
+  const iniciar = async (encerrarAnterior: boolean) => {
+    try {
+      await iniciarNaEntrega(e.id, encerrarAnterior)
+      setTimerAberto(false)
+      toast.success('Apontamento iniciado nesta entrega.')
+      window.dispatchEvent(new Event(EVENTO_TEMPO))
+    } catch (err) {
+      const r = recusaDe(err)
+      if (r?.code === 'timer_ativo') setTimerAberto(true)
+      else toast.error(getErrorMessage(err))
+    }
+  }
   const [novaData, setNovaData] = useState(e.data)
   const [dataRevisao, setDataRevisao] = useState('')
   const [editandoPessoas, setEditandoPessoas] = useState(false)
@@ -649,6 +668,45 @@ function EntregaDialog({
                 </Button>
               )}
             </div>
+          </div>
+
+          <div className="rounded-lg border border-slate-200 p-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="font-semibold text-slate-800 flex items-center gap-1.5">
+                <Timer className="w-4 h-4" /> Horas apontadas: {horasTxt(e.horas.total_seg)}
+              </div>
+              {role !== 'administrativo' && !e.entregue && (
+                <Button
+                  size="sm"
+                  className="gap-1 bg-green-700 hover:bg-green-800"
+                  onClick={() => iniciar(false)}
+                >
+                  <Play className="w-3.5 h-3.5" /> Iniciar apontamento
+                </Button>
+              )}
+            </div>
+            {timerAberto && (
+              <div className="mt-2 text-xs text-amber-800 bg-amber-50 rounded p-2 flex flex-wrap items-center gap-2">
+                Você já tem um apontamento aberto.
+                <Button size="sm" variant="outline" className="h-7" onClick={() => iniciar(true)}>
+                  Encerrar o anterior e começar este
+                </Button>
+              </div>
+            )}
+            {e.horas.por_pessoa.length > 0 && (
+              <ul className="mt-1 text-xs text-slate-600">
+                {e.horas.por_pessoa.map((p, i) => (
+                  <li key={p.pessoa?.id || i}>
+                    {p.pessoa?.nome || '—'}: {horasTxt(p.seg)}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {e.horas.fora_da_janela > 0 && (
+              <p className="mt-1 text-xs text-amber-700">
+                {e.horas.fora_da_janela} apontamento(s) fora da janela de execução.
+              </p>
+            )}
           </div>
 
           <div>
@@ -1016,6 +1074,7 @@ function LinhaDoTempoDialog({ projetoId, onClose }: { projetoId: string; onClose
                     {e.alocacoes.length
                       ? ' · ' + e.alocacoes.map((a) => a.pessoa?.nome || a.pessoa_texto).join(', ')
                       : ''}
+                    {e.horas_seg ? ' · ' + horasTxt(e.horas_seg) + ' apontadas' : ''}
                     {e.entregue ? ' · entregue ' + dataHoraBR(e.entregue_em) : ''}
                     {e.art_entregue ? ' · ART entregue' : ''}
                   </div>

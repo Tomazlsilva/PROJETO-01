@@ -240,6 +240,8 @@ routerAdd(
         'fonte',
         'qualidade',
         'data_referencia',
+        'entrega', // SPEC-1-008: a correção continua ligada à mesma entrega
+        'fora_da_janela',
       ]) {
         n.set(f, o.get(f))
       }
