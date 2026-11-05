@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Loader2, Lock, UserPlus, KeyRound, Trash2 } from 'lucide-react'
+import { Loader2, Lock, UserPlus, KeyRound, Trash2, Pencil } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -26,6 +26,8 @@ import { getErrorMessage } from '@/lib/pocketbase/errors'
 import {
   createUser,
   deleteUser,
+  DISCIPLINAS_PESSOA,
+  setDisciplinas,
   isLocked,
   listUsers,
   setUserActive,
@@ -43,6 +45,7 @@ export default function Usuarios() {
   const [senhaPara, setSenhaPara] = useState<UserRecord | null>(null)
   const [revogar, setRevogar] = useState<UserRecord | null>(null)
   const [apagar, setApagar] = useState<UserRecord | null>(null)
+  const [discPara, setDiscPara] = useState<UserRecord | null>(null)
 
   const carregar = useCallback(() => {
     listUsers()
@@ -104,11 +107,17 @@ export default function Usuarios() {
                     <td className="px-4 py-3">
                       <div className="font-medium text-slate-800">{u.name || '—'}</div>
                       <div className="text-xs text-slate-500">{u.email}</div>
-                      {(u as { disciplinas?: string[] }).disciplinas?.length ? (
-                        <div className="text-xs text-[#1E3A8A] mt-0.5">
-                          {(u as { disciplinas?: string[] }).disciplinas!.join(' · ')}
-                        </div>
-                      ) : null}
+                      <button
+                        type="button"
+                        onClick={() => setDiscPara(u)}
+                        title="Alterar disciplinas"
+                        className="mt-0.5 inline-flex items-center gap-1 text-xs text-[#1E3A8A] hover:underline"
+                      >
+                        {(u as { disciplinas?: string[] }).disciplinas?.length
+                          ? (u as { disciplinas?: string[] }).disciplinas!.join(' · ')
+                          : 'Sem disciplina'}
+                        <Pencil className="w-3 h-3 opacity-60" />
+                      </button>
                     </td>
                     <td className="px-4 py-3 min-w-[170px]">
                       <Select
@@ -228,6 +237,11 @@ export default function Usuarios() {
 
       <NovoUsuarioDialog open={novoAberto} onOpenChange={setNovoAberto} onCreated={carregar} />
       <SenhaDialog alvo={senhaPara} onClose={() => setSenhaPara(null)} />
+      <DisciplinasDialog
+        alvo={discPara}
+        onClose={() => setDiscPara(null)}
+        onSalvar={(id, lista) => run(() => setDisciplinas(id, lista), 'Disciplinas atualizadas.')}
+      />
 
       <Dialog open={!!revogar} onOpenChange={(o) => !o && setRevogar(null)}>
         <DialogContent>
@@ -284,6 +298,71 @@ export default function Usuarios() {
         </DialogContent>
       </Dialog>
     </div>
+  )
+}
+
+function DisciplinasDialog({
+  alvo,
+  onClose,
+  onSalvar,
+}: {
+  alvo: UserRecord | null
+  onClose: () => void
+  onSalvar: (id: string, lista: string[]) => Promise<void>
+}) {
+  const [lista, setLista] = useState<string[]>([])
+  const [salvando, setSalvando] = useState(false)
+
+  useEffect(() => {
+    setLista([...((alvo as { disciplinas?: string[] } | null)?.disciplinas ?? [])])
+  }, [alvo])
+
+  const alternar = (d: string, marcado: boolean) =>
+    setLista((atual) =>
+      marcado
+        ? DISCIPLINAS_PESSOA.filter((x) => x === d || atual.includes(x))
+        : atual.filter((x) => x !== d),
+    )
+
+  const salvar = async () => {
+    if (!alvo) return
+    setSalvando(true)
+    await onSalvar(alvo.id, lista)
+    setSalvando(false)
+    onClose()
+  }
+
+  return (
+    <Dialog open={!!alvo} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Disciplinas</DialogTitle>
+          <DialogDescription>
+            O que {alvo?.name || alvo?.email} faz. Ajuda a sugerir a pessoa certa em cada disciplina
+            do projeto e no calendário.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid grid-cols-2 gap-2">
+          {DISCIPLINAS_PESSOA.map((d) => (
+            <label key={d} className="flex items-center gap-2 text-sm text-slate-700">
+              <Checkbox
+                checked={lista.includes(d)}
+                onCheckedChange={(c) => alternar(d, c === true)}
+              />
+              {d}
+            </label>
+          ))}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button onClick={salvar} disabled={salvando} className="bg-[#1E3A8A] hover:bg-[#1E2A6B]">
+            {salvando ? 'Salvando…' : 'Salvar'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 

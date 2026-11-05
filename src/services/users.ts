@@ -37,6 +37,12 @@ export const updateUserRole = (id: string, papel: Papel) =>
 export const setVeCronograma = (id: string, ve_cronograma: boolean) =>
   pb.collection('users').update<UserRecord>(id, { ve_cronograma })
 
+export const DISCIPLINAS_PESSOA = ['Hidráulica', 'Elétrica', 'Ar-condicionado', 'PPCI', 'Estrutura']
+
+// Disciplinas que a pessoa faz (só o administrador altera)
+export const setDisciplinas = (id: string, disciplinas: string[]) =>
+  pb.collection('users').update<UserRecord>(id, { disciplinas })
+
 export type { Role }
 
 export const setUserActive = (id: string, active: boolean) =>
