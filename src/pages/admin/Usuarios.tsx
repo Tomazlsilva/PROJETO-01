@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Loader2, Lock, UserPlus, KeyRound } from 'lucide-react'
+import { Loader2, Lock, UserPlus, KeyRound, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -24,6 +24,7 @@ import { ROLES, ROLE_LABEL, asRole, type Role } from '@/lib/permissions'
 import { getErrorMessage } from '@/lib/pocketbase/errors'
 import {
   createUser,
+  deleteUser,
   isLocked,
   listUsers,
   setUserActive,
@@ -39,6 +40,7 @@ export default function Usuarios() {
   const [novoAberto, setNovoAberto] = useState(false)
   const [senhaPara, setSenhaPara] = useState<UserRecord | null>(null)
   const [revogar, setRevogar] = useState<UserRecord | null>(null)
+  const [apagar, setApagar] = useState<UserRecord | null>(null)
 
   const carregar = useCallback(() => {
     listUsers()
@@ -64,7 +66,8 @@ export default function Usuarios() {
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900">Usuários</h1>
           <p className="text-sm text-slate-500">
-            Contas individuais e papéis. Revogar encerra as sessões e preserva o histórico.
+            Contas individuais e papéis. Revogar encerra as sessões e preserva o histórico. Apagar
+            só vale para conta sem histórico (cadastro errado ou nunca usado).
           </p>
         </div>
         <Button
@@ -177,6 +180,18 @@ export default function Usuarios() {
                               Reativar
                             </Button>
                           ))}
+                        {!souEu && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            title="Apagar conta sem histórico"
+                            aria-label={`Apagar ${u.name || u.email}`}
+                            className="text-red-600 hover:bg-red-50 hover:text-red-700 px-2"
+                            onClick={() => setApagar(u)}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -212,6 +227,34 @@ export default function Usuarios() {
               }}
             >
               Revogar acesso
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!apagar} onOpenChange={(o) => !o && setApagar(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Apagar usuário</DialogTitle>
+            <DialogDescription>
+              A conta de {apagar?.name || apagar?.email} será apagada definitivamente. Isso só é
+              possível se ela não tiver nenhum histórico na Central (projetos, cards, apontamentos
+              ou ações). Se tiver, use Revogar: o acesso é cortado e a autoria é mantida.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setApagar(null)}>
+              Cancelar
+            </Button>
+            <Button
+              className="bg-red-600 hover:bg-red-700"
+              onClick={() => {
+                const alvo = apagar
+                setApagar(null)
+                if (alvo) void run(() => deleteUser(alvo.id), 'Usuário apagado.')
+              }}
+            >
+              Apagar definitivamente
             </Button>
           </DialogFooter>
         </DialogContent>

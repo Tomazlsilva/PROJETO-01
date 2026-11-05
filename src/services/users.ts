@@ -40,5 +40,12 @@ export const unlockUser = (id: string) =>
 export const setUserPassword = (id: string, password: string) =>
   pb.collection('users').update<UserRecord>(id, { password, passwordConfirm: password })
 
+// Só apaga conta sem histórico; com histórico o servidor responde 409 e indica Revogar
+export const deleteUser = (id: string) =>
+  pb.send<{ id: string; apagado: boolean }>(
+    `/backend/v1/usuarios/${encodeURIComponent(id)}/apagar`,
+    { method: 'POST', body: {} },
+  )
+
 export const isLocked = (u: UserRecord) =>
   !!u.locked_until && new Date(u.locked_until.replace(' ', 'T')) > new Date()
