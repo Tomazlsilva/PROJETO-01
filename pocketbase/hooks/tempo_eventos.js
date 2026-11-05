@@ -36,7 +36,7 @@ routerAdd(
     const papel = auth.getString('role')
     const gestor =
       papel === 'admin' ||
-      papel === 'executivo' ||
+      papel === 'administrativo' ||
       (papel === 'coordenador' && projeto.getString('coordenador') === auth.id)
     const nomes = {}
     const pessoa = (uid) => {
@@ -75,6 +75,7 @@ routerAdd(
     return e.json(200, {
       pode_corrigir:
         papel === 'admin' ||
+        papel === 'administrativo' ||
         (papel === 'coordenador' && projeto.getString('coordenador') === auth.id),
       itens: itens,
     })

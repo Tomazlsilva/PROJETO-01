@@ -115,8 +115,9 @@ routerAdd(
       }
 
       let alvo = ''
-      if (para === 'aguardando_revisao') alvo = c.getString('revisor')
-      else if (para === 'aprovado' || para === 'entrada_pendente') alvo = p.getString('coordenador')
+      // SPEC-1-008: a revisão técnica vai para o coordenador do projeto
+      if (para === 'aguardando_revisao' || para === 'aprovado' || para === 'entrada_pendente')
+        alvo = p.getString('coordenador')
       else alvo = c.getString('responsavel')
       let falha = ''
       if (!alvo) falha = 'destino_ausente'
@@ -134,7 +135,7 @@ routerAdd(
         h.set(
           'proxima_acao',
           para === 'aguardando_revisao'
-            ? 'Defina o revisor da disciplina e reprocesse.'
+            ? 'Defina o coordenador do projeto e reprocesse.'
             : 'Defina um responsável ativo e reprocesse.',
         )
         hist.push({

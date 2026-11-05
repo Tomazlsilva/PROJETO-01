@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-05T13:50:33.056Z",
+  "generatedAt": "2026-11-05T13:58:14.652Z",
   "collections": [
     {
       "name": "users",
@@ -52,8 +52,7 @@
             "admin",
             "coordenador",
             "projetista",
-            "revisor",
-            "executivo"
+            "administrativo"
           ]
         },
         {
@@ -183,8 +182,8 @@
       "name": "projetos",
       "type": "base",
       "apiRules": {
-        "list": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'executivo' || coordenador = @request.auth.id || membros.id ?= @request.auth.id)",
-        "view": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'executivo' || coordenador = @request.auth.id || membros.id ?= @request.auth.id)",
+        "list": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'administrativo' || coordenador = @request.auth.id || membros.id ?= @request.auth.id)",
+        "view": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'administrativo' || coordenador = @request.auth.id || membros.id ?= @request.auth.id)",
         "create": null,
         "update": null,
         "delete": null
@@ -288,9 +287,9 @@
       "name": "revisoes",
       "type": "base",
       "apiRules": {
-        "list": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'executivo' || projeto.coordenador = @request.auth.id || projeto.membros.id ?= @request.auth.id)",
-        "view": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'executivo' || projeto.coordenador = @request.auth.id || projeto.membros.id ?= @request.auth.id)",
-        "create": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && @request.body.autor = @request.auth.id && (@request.auth.role = 'admin' || ((@request.auth.role = 'revisor' || @request.auth.role = 'coordenador') && (@request.body.projeto.coordenador = @request.auth.id || @request.body.projeto.membros.id ?= @request.auth.id)))",
+        "list": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'administrativo' || projeto.coordenador = @request.auth.id || projeto.membros.id ?= @request.auth.id)",
+        "view": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'administrativo' || projeto.coordenador = @request.auth.id || projeto.membros.id ?= @request.auth.id)",
+        "create": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && @request.body.autor = @request.auth.id && (@request.auth.role = 'admin' || ((@request.auth.role = 'coordenador' || @request.auth.role = 'coordenador') && (@request.body.projeto.coordenador = @request.auth.id || @request.body.projeto.membros.id ?= @request.auth.id)))",
         "update": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && autor = @request.auth.id && (@request.body.autor:isset = false || @request.body.autor = @request.auth.id) && (@request.body.projeto:isset = false || @request.body.projeto = projeto)",
         "delete": null
       },
@@ -343,8 +342,8 @@
       "name": "clientes",
       "type": "base",
       "apiRules": {
-        "list": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'executivo' || (@collection.projetos:p.cliente ?= id && (@collection.projetos:p.coordenador ?= @request.auth.id || @collection.projetos:p.membros.id ?= @request.auth.id)))",
-        "view": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'executivo' || (@collection.projetos:p.cliente ?= id && (@collection.projetos:p.coordenador ?= @request.auth.id || @collection.projetos:p.membros.id ?= @request.auth.id)))",
+        "list": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'administrativo' || (@collection.projetos:p.cliente ?= id && (@collection.projetos:p.coordenador ?= @request.auth.id || @collection.projetos:p.membros.id ?= @request.auth.id)))",
+        "view": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'administrativo' || (@collection.projetos:p.cliente ?= id && (@collection.projetos:p.coordenador ?= @request.auth.id || @collection.projetos:p.membros.id ?= @request.auth.id)))",
         "create": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && @request.auth.role = 'admin'",
         "update": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || (@request.auth.role = 'coordenador' && @collection.projetos:pc.cliente ?= id && @collection.projetos:pc.coordenador ?= @request.auth.id))",
         "delete": null
@@ -450,8 +449,8 @@
       "name": "projeto_disciplinas",
       "type": "base",
       "apiRules": {
-        "list": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'executivo' || projeto.coordenador = @request.auth.id || projeto.membros.id ?= @request.auth.id)",
-        "view": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'executivo' || projeto.coordenador = @request.auth.id || projeto.membros.id ?= @request.auth.id)",
+        "list": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'administrativo' || projeto.coordenador = @request.auth.id || projeto.membros.id ?= @request.auth.id)",
+        "view": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'administrativo' || projeto.coordenador = @request.auth.id || projeto.membros.id ?= @request.auth.id)",
         "create": null,
         "update": null,
         "delete": null
@@ -597,8 +596,8 @@
       "name": "projeto_historico",
       "type": "base",
       "apiRules": {
-        "list": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'executivo' || projeto.coordenador = @request.auth.id || projeto.membros.id ?= @request.auth.id)",
-        "view": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'executivo' || projeto.coordenador = @request.auth.id || projeto.membros.id ?= @request.auth.id)",
+        "list": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'administrativo' || projeto.coordenador = @request.auth.id || projeto.membros.id ?= @request.auth.id)",
+        "view": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'administrativo' || projeto.coordenador = @request.auth.id || projeto.membros.id ?= @request.auth.id)",
         "create": null,
         "update": null,
         "delete": null
@@ -748,8 +747,8 @@
       "name": "transicoes",
       "type": "base",
       "apiRules": {
-        "list": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'executivo' || projeto.coordenador = @request.auth.id || projeto.membros.id ?= @request.auth.id)",
-        "view": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'executivo' || projeto.coordenador = @request.auth.id || projeto.membros.id ?= @request.auth.id)",
+        "list": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'administrativo' || projeto.coordenador = @request.auth.id || projeto.membros.id ?= @request.auth.id)",
+        "view": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'administrativo' || projeto.coordenador = @request.auth.id || projeto.membros.id ?= @request.auth.id)",
         "create": null,
         "update": null,
         "delete": null
@@ -853,8 +852,8 @@
       "name": "atividades",
       "type": "base",
       "apiRules": {
-        "list": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'executivo' || projeto.coordenador = @request.auth.id || projeto.membros.id ?= @request.auth.id)",
-        "view": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'executivo' || projeto.coordenador = @request.auth.id || projeto.membros.id ?= @request.auth.id)",
+        "list": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'administrativo' || projeto.coordenador = @request.auth.id || projeto.membros.id ?= @request.auth.id)",
+        "view": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'administrativo' || projeto.coordenador = @request.auth.id || projeto.membros.id ?= @request.auth.id)",
         "create": null,
         "update": null,
         "delete": null
@@ -1204,8 +1203,8 @@
       "name": "tempo_eventos",
       "type": "base",
       "apiRules": {
-        "list": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'executivo' || usuario = @request.auth.id || projeto.coordenador = @request.auth.id)",
-        "view": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'executivo' || usuario = @request.auth.id || projeto.coordenador = @request.auth.id)",
+        "list": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'administrativo' || usuario = @request.auth.id || projeto.coordenador = @request.auth.id)",
+        "view": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'administrativo' || usuario = @request.auth.id || projeto.coordenador = @request.auth.id)",
         "create": null,
         "update": null,
         "delete": null
@@ -1465,8 +1464,8 @@
       "name": "tempo_importacoes",
       "type": "base",
       "apiRules": {
-        "list": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'executivo')",
-        "view": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'executivo')",
+        "list": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'administrativo')",
+        "view": "@request.auth.id != '' && @request.auth.active = true && @request.auth.session_expires_at > @now && (@request.auth.role = 'admin' || @request.auth.role = 'administrativo')",
         "create": null,
         "update": null,
         "delete": null

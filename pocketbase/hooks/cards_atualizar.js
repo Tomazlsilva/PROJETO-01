@@ -87,7 +87,7 @@ routerAdd(
         try {
           u = $app.findRecordById('users', r)
         } catch (_) {}
-        if (!u || !u.getBool('active') || u.getString('role') === 'executivo') {
+        if (!u || !u.getBool('active') || u.getString('role') === 'administrativo') {
           erros.responsavel = new ValidationError(
             'invalido',
             'Escolha um responsável ativo que possa executar o trabalho.',
@@ -96,7 +96,9 @@ routerAdd(
       }
       novos.responsavel = r
     }
-    if (body.revisor !== undefined) {
+    // SPEC-1-008: o campo revisor sai — a revisão técnica é do coordenador do projeto.
+    // Pedidos que ainda mandem "revisor" são ignorados (o valor antigo fica só para histórico).
+    if (false && body.revisor !== undefined) {
       const r = body.revisor ? String(body.revisor) : ''
       if (r) {
         let u = null

@@ -168,11 +168,11 @@ routerAdd(
     const papel = su ? 'admin' : auth.getString('role')
     const ehAdmin = papel === 'admin'
     const ehCoord = papel === 'coordenador' && projeto.getString('coordenador') === auth.id
-    const ehResp = card.getString('responsavel') === auth.id && papel !== 'executivo'
-    const ehRevisor = papel === 'revisor' && projeto.getStringSlice('membros').indexOf(auth.id) >= 0
+    const ehResp = card.getString('responsavel') === auth.id && papel !== 'administrativo'
+    // SPEC-1-008: só coordenador do projeto, diretor ou administrador aprovam/devolvem
     let pode = false
     if (classe === 'exec') pode = ehAdmin || ehCoord || ehResp
-    else if (classe === 'rev') pode = ehAdmin || ehCoord || (ehRevisor && !ehResp)
+    else if (classe === 'rev') pode = ehAdmin || ehCoord
     else pode = ehAdmin || ehCoord
     if (!pode) negar('sem_alcada_' + classe)
 
@@ -307,8 +307,8 @@ routerAdd(
         tx.save(a)
       }
       let alvo = ''
-      if (para === 'aguardando_revisao') alvo = c.getString('revisor')
-      else if (para === 'aprovado' || para === 'entrada_pendente') alvo = p.getString('coordenador')
+      if (para === 'aguardando_revisao' || para === 'aprovado' || para === 'entrada_pendente')
+        alvo = p.getString('coordenador')
       else alvo = c.getString('responsavel')
       let falha = ''
       if (!alvo) falha = 'destino_ausente'
@@ -325,14 +325,14 @@ routerAdd(
         const motivoTexto =
           falha === 'destino_ausente'
             ? para === 'aguardando_revisao'
-              ? 'Disciplina sem revisor definido.'
+              ? 'Projeto sem coordenador definido.'
               : 'Disciplina sem responsável definido.'
             : falha === 'destino_inativo'
               ? 'O destinatário está inativo.'
               : ''
         const proxima = falha
           ? para === 'aguardando_revisao'
-            ? 'Defina o revisor da disciplina e reprocesse.'
+            ? 'Defina o coordenador do projeto e reprocesse.'
             : 'Defina um responsável ativo e reprocesse.'
           : ''
         const chaveH = 'transicao:' + t.id

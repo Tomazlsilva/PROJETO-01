@@ -1,16 +1,17 @@
 // Matriz papel × ação da SPEC-1-001 — usada SOMENTE para a interface.
 // A autorização real é feita no servidor (regras das coleções e hooks).
 
-export type Role = 'admin' | 'coordenador' | 'projetista' | 'revisor' | 'executivo'
+// SPEC-1-008: 5 papéis — Administrador, Diretor (admin + tipo de conta), Coordenador,
+// Administrativo e Projetista. Saem Revisor e Executivo.
+export type Role = 'admin' | 'coordenador' | 'projetista' | 'administrativo'
 
-export const ROLES: Role[] = ['admin', 'coordenador', 'projetista', 'revisor', 'executivo']
+export const ROLES: Role[] = ['admin', 'coordenador', 'administrativo', 'projetista']
 
 export const ROLE_LABEL: Record<Role, string> = {
   admin: 'Administrador',
   coordenador: 'Coordenador',
   projetista: 'Projetista',
-  revisor: 'Revisor',
-  executivo: 'Executivo',
+  administrativo: 'Administrativo',
 }
 
 export const ROLE_PERMISSIONS: Record<Role, string[]> = {
@@ -23,16 +24,15 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
   coordenador: [
     'Cria projetos sob sua coordenação',
     'Edita os projetos que coordena',
-    'Registra revisões nos projetos que coordena',
+    'Faz a revisão técnica (aprova ou devolve) nos projetos que coordena',
     'Não administra usuários',
   ],
   projetista: ['Vê somente os projetos em que está vinculado', 'Não acessa a administração'],
-  revisor: [
-    'Vê os projetos em que está vinculado',
-    'Registra revisões com a própria autoria',
-    'Não altera a autoria de outros usuários',
+  administrativo: [
+    'Vê todos os projetos, painéis e horas, com nomes, e exporta CSV',
+    'Corrige horas apontadas, com motivo',
+    'Não altera datas, entregas nem a produção',
   ],
-  executivo: ['Consulta todos os projetos e painéis', 'Não edita a produção'],
 }
 
 // SPEC-1-008 — Diretor: mesmo poder do Administrador (papel 'admin'), tipo de conta diferente.
@@ -59,5 +59,4 @@ export function asRole(value: unknown): Role | null {
   return typeof value === 'string' && (ROLES as string[]).includes(value) ? (value as Role) : null
 }
 
-export const canWriteReview = (role: Role | null) =>
-  role === 'admin' || role === 'coordenador' || role === 'revisor'
+export const canWriteReview = (role: Role | null) => role === 'admin' || role === 'coordenador'

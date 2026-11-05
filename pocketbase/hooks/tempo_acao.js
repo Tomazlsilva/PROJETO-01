@@ -60,10 +60,14 @@ routerAdd(
       } catch (_) {}
     }
     const gestor = papel === 'admin' || (papel === 'coordenador' && coordDoProjeto)
+    // SPEC-1-008: o administrativo corrige horas (revisar/corrigir) em todos os projetos, com motivo
+    const corrige = gestor || papel === 'administrativo'
     if (acao === 'pausar' || acao === 'retomar' || acao === 'encerrar') {
       if (!dono) negar('nao_e_dono')
     } else if (acao === 'revisar') {
-      if (!dono && !gestor) negar('sem_alcada')
+      if (!dono && !corrige) negar('sem_alcada')
+    } else if (acao === 'corrigir') {
+      if (!corrige) negar('sem_alcada')
     } else if (!gestor) negar('sem_alcada')
 
     const body = e.requestInfo().body || {}

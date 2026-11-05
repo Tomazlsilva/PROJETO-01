@@ -20,7 +20,7 @@ routerAdd(
       throw new UnauthorizedError('Sessão inválida ou expirada.')
     }
     const papel = auth.getString('role')
-    if (papel !== 'admin' && papel !== 'executivo' && papel !== 'coordenador') {
+    if (papel !== 'admin' && papel !== 'administrativo' && papel !== 'coordenador') {
       try {
         const r = new Record($app.findCollectionByNameOrId('auth_audit'))
         r.set('actor_id', auth.id)

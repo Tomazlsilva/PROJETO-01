@@ -48,7 +48,8 @@ routerAdd(
       const v = String(q.get(k) || '').trim()
       if (v) filtrosTxt[k] = v.slice(0, 40)
     }
-    if (papel !== 'admin' && papel !== 'executivo' && papel !== 'coordenador') {
+    // SPEC-1-008: administrativo vê tudo, com nomes, e exporta; sai o modo "sem nomes"
+    if (papel !== 'admin' && papel !== 'administrativo' && papel !== 'coordenador') {
       auditar(csv ? 'export.negado' : 'access.denied', 'blocked', {
         recurso: 'painel',
         metrica: metrica,
@@ -56,7 +57,7 @@ routerAdd(
       })
       throw new ForbiddenError('Acesso negado.')
     }
-    if (csv && papel !== 'admin' && papel !== 'coordenador') {
+    if (csv && papel !== 'admin' && papel !== 'administrativo' && papel !== 'coordenador') {
       auditar('export.negado', 'blocked', {
         recurso: 'painel',
         metrica: metrica,
@@ -65,7 +66,7 @@ routerAdd(
       })
       throw new ForbiddenError('Acesso negado.')
     }
-    const ocultarNomes = papel === 'executivo'
+    const ocultarNomes = false
 
     // ---- período (fuso de Brasília) ----
     const hoje = new Date(Date.now() - 3 * 3600000).toISOString().slice(0, 10)
@@ -503,7 +504,7 @@ routerAdd(
       filtros: filtrosTxt,
       escopo: papel === 'coordenador' ? 'equipe' : 'todos',
       somente_leitura: true,
-      pode_exportar: papel === 'admin' || papel === 'coordenador',
+      pode_exportar: papel === 'admin' || papel === 'administrativo' || papel === 'coordenador',
       limiar: 0.8,
       projetos: { valor: projetosRec.length },
       etapas: etapasCfg.map((x) => ({

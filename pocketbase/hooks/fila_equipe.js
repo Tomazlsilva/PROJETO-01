@@ -21,7 +21,7 @@ routerAdd(
       }
     }
     const papel = su ? 'admin' : auth.getString('role')
-    if (papel !== 'admin' && papel !== 'executivo' && papel !== 'coordenador') {
+    if (papel !== 'admin' && papel !== 'administrativo' && papel !== 'coordenador') {
       try {
         const a = new Record($app.findCollectionByNameOrId('auth_audit'))
         a.set('actor_id', auth.id)
@@ -162,10 +162,7 @@ routerAdd(
       incluir(resp, c, item, 'responsavel')
       if (bloqueado) incluir(c.getString('bloqueio_dono'), c, item, 'bloqueio')
       if (item.etapa === 'aguardando_revisao' && !bloqueado) {
-        for (const m of p.membros) {
-          const u = usuario(m)
-          if (u && u.papel === 'revisor' && m !== resp) incluir(m, c, item, 'revisao')
-        }
+        // SPEC-1-008: a revisão técnica é do coordenador do projeto
         if (p.coordenador && p.coordenador !== resp) incluir(p.coordenador, c, item, 'revisao')
       }
     }

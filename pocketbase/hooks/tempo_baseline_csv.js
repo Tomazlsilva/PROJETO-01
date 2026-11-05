@@ -16,7 +16,7 @@ routerAdd(
       throw new UnauthorizedError('Sessão inválida ou expirada.')
     }
     const papel = auth.getString('role')
-    if (papel !== 'admin' && papel !== 'executivo' && papel !== 'coordenador')
+    if (papel !== 'admin' && papel !== 'administrativo' && papel !== 'coordenador')
       throw new ForbiddenError('Acesso negado.')
     const limite = new Date(Date.now() - 12 * 3600000).toISOString().replace('T', ' ')
     for (const t of $app.findRecordsByFilter(

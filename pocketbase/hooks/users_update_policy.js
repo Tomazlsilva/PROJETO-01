@@ -23,7 +23,7 @@ onRecordUpdateRequest((e) => {
 
   const rec = e.record
   const orig = rec.original()
-  const roles = ['admin', 'coordenador', 'projetista', 'revisor', 'executivo']
+  const roles = ['admin', 'coordenador', 'projetista', 'administrativo'] // SPEC-1-008
   if (!roles.includes(rec.getString('role'))) {
     throw new BadRequestError('Informe um papel válido.')
   }

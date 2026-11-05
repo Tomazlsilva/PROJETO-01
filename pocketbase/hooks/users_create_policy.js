@@ -32,7 +32,7 @@ onRecordCreateRequest((e) => {
   } else if (password.length < 8) {
     throw new BadRequestError('A senha deve ter pelo menos 8 caracteres.')
   }
-  const roles = ['admin', 'coordenador', 'projetista', 'revisor', 'executivo']
+  const roles = ['admin', 'coordenador', 'projetista', 'administrativo'] // SPEC-1-008
   if (!roles.includes(e.record.getString('role'))) {
     throw new BadRequestError('Informe um papel válido.')
   }

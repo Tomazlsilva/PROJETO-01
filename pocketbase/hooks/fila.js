@@ -41,7 +41,7 @@ routerAdd(
       throw new ForbiddenError('Acesso negado.')
     }
     const propria = !su && pessoaId === auth.id
-    if (!propria && papel !== 'admin' && papel !== 'executivo' && papel !== 'coordenador')
+    if (!propria && papel !== 'admin' && papel !== 'administrativo' && papel !== 'coordenador')
       negar('sem_alcada')
     let pessoa = null
     try {
@@ -99,7 +99,7 @@ routerAdd(
           const r = $app.findRecordById('projetos', pid)
           let ok = false
           if (propria) ok = $app.canAccessRecord(r, info, regra)
-          else if (papel === 'admin' || papel === 'executivo') ok = true
+          else if (papel === 'admin' || papel === 'administrativo') ok = true
           else ok = r.getString('coordenador') === auth.id
           if (ok && !r.getBool('arquivado')) {
             p = {
@@ -166,7 +166,7 @@ routerAdd(
         c.getString('etapa') === 'aguardando_revisao' &&
         !bloqueado &&
         c.getString('responsavel') !== pid &&
-        ((papelPessoa === 'revisor' && p.membros.indexOf(pid) >= 0) || p.coordenador === pid)
+        p.coordenador === pid // SPEC-1-008: a revisão técnica é do coordenador do projeto
       ) {
         motivos.push('revisao')
       }

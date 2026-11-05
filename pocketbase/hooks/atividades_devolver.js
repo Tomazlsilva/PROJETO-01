@@ -52,7 +52,7 @@ routerAdd(
       !!projeto &&
       (papel === 'admin' ||
         (papel === 'coordenador' && projeto.getString('coordenador') === auth.id) ||
-        (!su && a.getString('destinatario') === auth.id && papel !== 'executivo'))
+        (!su && a.getString('destinatario') === auth.id && papel !== 'administrativo'))
     if (!pode) negar('sem_alcada')
 
     const body = e.requestInfo().body || {}
@@ -137,8 +137,8 @@ routerAdd(
 
       // ---- Handoff para a etapa de origem (mesma regra do mover) ----
       let alvo = ''
-      if (para === 'aguardando_revisao') alvo = c.getString('revisor')
-      else if (para === 'aprovado' || para === 'entrada_pendente') alvo = p.getString('coordenador')
+      if (para === 'aguardando_revisao' || para === 'aprovado' || para === 'entrada_pendente')
+        alvo = p.getString('coordenador')
       else alvo = c.getString('responsavel')
       let falha = ''
       if (!alvo) falha = 'destino_ausente'
@@ -155,14 +155,14 @@ routerAdd(
         const motivoTexto =
           falha === 'destino_ausente'
             ? para === 'aguardando_revisao'
-              ? 'Disciplina sem revisor definido.'
+              ? 'Projeto sem coordenador definido.'
               : 'Disciplina sem responsável definido.'
             : falha === 'destino_inativo'
               ? 'O destinatário está inativo.'
               : ''
         const proxima = falha
           ? para === 'aguardando_revisao'
-            ? 'Defina o revisor da disciplina e reprocesse.'
+            ? 'Defina o coordenador do projeto e reprocesse.'
             : 'Defina um responsável ativo e reprocesse.'
           : ''
         const chaveH = 'transicao:' + t.id
