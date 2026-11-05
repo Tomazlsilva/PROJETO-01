@@ -20,7 +20,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useAuth } from '@/contexts/AuthContext'
-import { ROLES, ROLE_LABEL, asRole, type Role } from '@/lib/permissions'
+import { PAPEIS, PAPEL_LABEL, papelDe, type Papel } from '@/lib/permissions'
+import { Checkbox } from '@/components/ui/checkbox'
 import { getErrorMessage } from '@/lib/pocketbase/errors'
 import {
   createUser,
@@ -29,6 +30,7 @@ import {
   listUsers,
   setUserActive,
   setUserPassword,
+  setVeCronograma,
   unlockUser,
   updateUserRole,
   type UserRecord,
@@ -105,23 +107,40 @@ export default function Usuarios() {
                     </td>
                     <td className="px-4 py-3 min-w-[170px]">
                       <Select
-                        value={asRole(u.role) ?? undefined}
+                        value={papelDe(u) ?? undefined}
                         disabled={souEu || !u.active}
                         onValueChange={(v) =>
-                          run(() => updateUserRole(u.id, v as Role), 'Papel atualizado.')
+                          run(() => updateUserRole(u.id, v as Papel), 'Papel atualizado.')
                         }
                       >
                         <SelectTrigger className="h-9">
                           <SelectValue placeholder="Sem papel" />
                         </SelectTrigger>
                         <SelectContent>
-                          {ROLES.map((r) => (
+                          {PAPEIS.map((r) => (
                             <SelectItem key={r} value={r}>
-                              {ROLE_LABEL[r]}
+                              {PAPEL_LABEL[r]}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
+                      {u.role === 'projetista' && (
+                        <label className="mt-1.5 flex items-center gap-1.5 text-xs text-slate-500">
+                          <Checkbox
+                            checked={!!u.ve_cronograma}
+                            disabled={!u.active}
+                            onCheckedChange={(c) =>
+                              run(
+                                () => setVeCronograma(u.id, c === true),
+                                c === true
+                                  ? 'Passa a ver o cronograma inteiro.'
+                                  : 'Volta a ver só os próprios projetos.',
+                              )
+                            }
+                          />
+                          Vê o cronograma inteiro
+                        </label>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       {!u.active ? (
@@ -281,7 +300,7 @@ function NovoUsuarioDialog({
 }) {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
-  const [role, setRole] = useState<Role>('projetista')
+  const [role, setRole] = useState<Papel>('projetista')
   const [password, setPassword] = useState('')
   const [salvando, setSalvando] = useState(false)
 
@@ -341,14 +360,14 @@ function NovoUsuarioDialog({
           </div>
           <div className="space-y-1.5">
             <Label>Papel</Label>
-            <Select value={role} onValueChange={(v) => setRole(v as Role)}>
+            <Select value={role} onValueChange={(v) => setRole(v as Papel)}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {ROLES.map((r) => (
+                {PAPEIS.map((r) => (
                   <SelectItem key={r} value={r}>
-                    {ROLE_LABEL[r]}
+                    {PAPEL_LABEL[r]}
                   </SelectItem>
                 ))}
               </SelectContent>

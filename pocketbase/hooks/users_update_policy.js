@@ -38,6 +38,8 @@ onRecordUpdateRequest((e) => {
     'session_expires_at',
     'verified',
     'email',
+    'tipo_conta',
+    've_cronograma',
   ]
   const mudou = protegidos.filter(
     (f) => body[f] !== undefined && rec.getString(f) !== orig.getString(f),
@@ -58,16 +60,29 @@ onRecordUpdateRequest((e) => {
     }
   }
 
+  // Diretor só existe sobre o papel de administrador
+  if (rec.getString('role') !== 'admin' && rec.getString('tipo_conta') !== '') {
+    rec.set('tipo_conta', '')
+  }
+
   const trocouSenha = typeof body.password === 'string' && body.password !== ''
 
   e.next()
 
   if (isSuper) return
   const alvo = rec.id
-  if (orig.getString('role') !== rec.getString('role')) {
-    audit('user.role_change', 'success', alvo, {
-      antes: orig.getString('role'),
-      depois: rec.getString('role'),
+  // SPEC-1-008: Diretor = papel admin com tipo_conta 'diretor'
+  const rotulo = (r, t) => (r === 'admin' && t === 'diretor' ? 'diretor' : r)
+  const papelAntes = rotulo(orig.getString('role'), orig.getString('tipo_conta'))
+  const papelDepois = rotulo(rec.getString('role'), rec.getString('tipo_conta'))
+  if (papelAntes !== papelDepois) {
+    audit('user.role_change', 'success', alvo, { antes: papelAntes, depois: papelDepois })
+  }
+  if (orig.getBool('ve_cronograma') !== rec.getBool('ve_cronograma')) {
+    audit('user.update', 'success', alvo, {
+      campo: 've_cronograma',
+      antes: orig.getBool('ve_cronograma'),
+      depois: rec.getBool('ve_cronograma'),
     })
   }
   if (orig.getBool('active') && !rec.getBool('active')) {

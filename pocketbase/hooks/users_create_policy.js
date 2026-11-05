@@ -37,6 +37,9 @@ onRecordCreateRequest((e) => {
     throw new BadRequestError('Informe um papel válido.')
   }
 
+  // SPEC-1-008: Diretor = papel admin com tipo_conta 'diretor'
+  if (e.record.getString('role') !== 'admin') e.record.set('tipo_conta', '')
+
   if (body.active === undefined) e.record.set('active', true)
   e.record.set('failed_attempts', 0)
   e.record.set('locked_until', '')
@@ -47,7 +50,7 @@ onRecordCreateRequest((e) => {
   e.next()
 
   audit('user.create', 'success', e.record.id, {
-    papel: e.record.getString('role'),
+    papel: e.record.getString('tipo_conta') === 'diretor' ? 'diretor' : e.record.getString('role'),
     ativo: e.record.getBool('active'),
   })
 }, 'users')
