@@ -32,7 +32,8 @@ routerAdd(
       }
       throw new ForbiddenError('Acesso negado.')
     }
-    if (papel !== 'admin' && papel !== 'coordenador') negar('papel')
+    // SPEC-1-008: administrativo vê todas as mudanças (inclusive as correções de horas)
+    if (papel !== 'admin' && papel !== 'administrativo' && papel !== 'coordenador') negar('papel')
     if (projeto) {
       let p = null
       try {

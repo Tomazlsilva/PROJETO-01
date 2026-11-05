@@ -45,9 +45,9 @@ const App = () => (
           </Route>
           <Route element={<AppShell roles={['admin', 'coordenador']} />}>
             <Route path="/falhas" element={<Falhas />} />
-            <Route path="/mudancas" element={<Mudancas />} />
           </Route>
-          <Route element={<AppShell roles={['admin', 'coordenador', 'executivo']} />}>
+          <Route element={<AppShell roles={['admin', 'coordenador', 'administrativo']} />}>
+            <Route path="/mudancas" element={<Mudancas />} />
             <Route path="/baseline" element={<Baseline />} />
             <Route path="/painel" element={<Painel />} />
           </Route>

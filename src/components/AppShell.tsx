@@ -21,7 +21,7 @@ import { Button } from '@/components/ui/button'
 import { CmxLogo } from '@/components/CmxLogo'
 import { Notificacoes } from '@/components/Notificacoes'
 import { useAuth } from '@/contexts/AuthContext'
-import { ROLE_LABEL, type Role } from '@/lib/permissions'
+import { PAPEL_LABEL, papelDe, type Role } from '@/lib/permissions'
 
 interface AppShellProps {
   roles?: Role[]
@@ -49,7 +49,8 @@ export default function AppShell({ roles, largo }: AppShellProps) {
 
   const allowed = !roles || (role !== null && roles.includes(role))
   const veFalhas = role === 'admin' || role === 'coordenador'
-  const veBaseline = veFalhas || role === 'executivo'
+  const veBaseline = veFalhas || role === 'administrativo'
+  const papel = papelDe(user as { role?: unknown; tipo_conta?: unknown } | null)
   const userName = (user?.name as string) || (user?.email as string)?.split('@')[0] || 'Usuário'
 
   const navClass = ({ isActive }: { isActive: boolean }) =>
@@ -89,7 +90,7 @@ export default function AppShell({ roles, largo }: AppShellProps) {
                 <BarChart3 className="w-4 h-4" /> Baseline
               </NavLink>
             )}
-            {veFalhas && (
+            {veBaseline && (
               <NavLink to="/mudancas" className={navClass}>
                 <History className="w-4 h-4" /> Mudanças
               </NavLink>
@@ -117,7 +118,7 @@ export default function AppShell({ roles, largo }: AppShellProps) {
           <Notificacoes />
           <div className="hidden sm:block text-right">
             <div className="text-sm font-semibold text-slate-800 leading-tight">{userName}</div>
-            <div className="text-xs text-slate-500">{role ? ROLE_LABEL[role] : 'Sem papel'}</div>
+            <div className="text-xs text-slate-500">{papel ? PAPEL_LABEL[papel] : 'Sem papel'}</div>
           </div>
           <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center border border-blue-200">
             <User className="w-4 h-4" />
@@ -161,7 +162,7 @@ export default function AppShell({ roles, largo }: AppShellProps) {
             Baseline
           </NavLink>
         )}
-        {veFalhas && (
+        {veBaseline && (
           <NavLink to="/mudancas" className={navClass}>
             Mudanças
           </NavLink>
