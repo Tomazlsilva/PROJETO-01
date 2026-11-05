@@ -26,6 +26,7 @@ import { getErrorMessage } from '@/lib/pocketbase/errors'
 
 const OAUTH2_REDIRECT_PATH = '/api/oauth2-redirect'
 const PENDENTE_KEY = 'cmx_oauth2_pendente'
+const RESULTADO_KEY = 'cmx_oauth2_resultado'
 const PENDENTE_TTL_MS = 15 * 60 * 1000
 
 interface Pendente {
@@ -107,6 +108,13 @@ function trocarParametro(url: string, chave: string, valor: string): string {
 }
 
 function notificarOpener(mensagem: MensagemPopup): void {
+  // Salva no localStorage para sincronização entre abas/janelas
+  try {
+    localStorage.setItem(RESULTADO_KEY, JSON.stringify(mensagem))
+  } catch {
+    // ignora
+  }
+
   try {
     if (window.opener && !window.opener.closed) {
       window.opener.postMessage(mensagem, window.location.origin)
@@ -130,18 +138,21 @@ export function iniciarLoginOAuth2(providerName: string): Promise<RetornoOAuth2>
       encerrado = true
       if (vigia) clearInterval(vigia)
       window.removeEventListener('message', aoMensagem)
+      window.removeEventListener('storage', aoStorage)
       prosseguir()
     }
 
-    const aoMensagem = (evento: MessageEvent): void => {
-      if (encerrado) return
-      if (evento.origin !== window.location.origin || evento.source !== popup) return
-      const dados = evento.data as MensagemPopup | undefined
-      if (!dados || dados.tipo !== 'cmx-oauth2') return
+    const processarResultado = (dados: MensagemPopup): void => {
       if (dados.ok && dados.token) {
-        finalizar(() =>
-          resolve({ token: dados.token as string, record: dados.record as RecordModel }),
-        )
+        finalizar(() => {
+          if (popup && !popup.closed) popup.close()
+          try {
+            localStorage.removeItem(RESULTADO_KEY)
+          } catch {
+            // ignora
+          }
+          resolve({ token: dados.token as string, record: dados.record as RecordModel })
+        })
       } else {
         const erro = new Error(dados.mensagem || 'Não foi possível concluir o login.') as Error & {
           status?: number
@@ -149,17 +160,75 @@ export function iniciarLoginOAuth2(providerName: string): Promise<RetornoOAuth2>
         erro.status = dados.status
         finalizar(() => {
           if (popup && !popup.closed) popup.close()
+          try {
+            localStorage.removeItem(RESULTADO_KEY)
+          } catch {
+            // ignora
+          }
           reject(erro)
         })
       }
     }
 
-    window.addEventListener('message', aoMensagem)
-    vigia = setInterval(() => {
-      if (popup && popup.closed && !encerrado) {
-        finalizar(() => reject(new Error('A janela de login foi fechada antes de concluir.')))
+    const aoMensagem = (evento: MessageEvent): void => {
+      if (encerrado) return
+      if (evento.origin !== window.location.origin) return
+      const dados = evento.data as MensagemPopup | undefined
+      if (!dados || dados.tipo !== 'cmx-oauth2') return
+      processarResultado(dados)
+    }
+
+    const aoStorage = (evento: StorageEvent): void => {
+      if (encerrado) return
+      if (evento.key !== RESULTADO_KEY || !evento.newValue) return
+      try {
+        const dados = JSON.parse(evento.newValue) as MensagemPopup
+        if (dados && dados.tipo === 'cmx-oauth2') {
+          processarResultado(dados)
+        }
+      } catch {
+        // ignora
       }
-    }, 800)
+    }
+
+    window.addEventListener('message', aoMensagem)
+    window.addEventListener('storage', aoStorage)
+
+    vigia = setInterval(() => {
+      // Verifica se o resultado foi gravado no localStorage (mesma aba ou abas irmãs)
+      try {
+        const salvo = localStorage.getItem(RESULTADO_KEY)
+        if (salvo) {
+          const dados = JSON.parse(salvo) as MensagemPopup
+          if (dados && dados.tipo === 'cmx-oauth2') {
+            processarResultado(dados)
+            return
+          }
+        }
+      } catch {
+        // ignora
+      }
+
+      if (popup && popup.closed && !encerrado) {
+        // Dá um pequeno intervalo de 1s para o evento de storage/postMessage ser processado
+        setTimeout(() => {
+          if (encerrado) return
+          try {
+            const tardio = localStorage.getItem(RESULTADO_KEY)
+            if (tardio) {
+              const dados = JSON.parse(tardio) as MensagemPopup
+              if (dados && dados.tipo === 'cmx-oauth2') {
+                processarResultado(dados)
+                return
+              }
+            }
+          } catch {
+            // ignora
+          }
+          finalizar(() => reject(new Error('A janela de login foi fechada antes de concluir.')))
+        }, 1000)
+      }
+    }, 600)
 
     void (async () => {
       try {
@@ -180,6 +249,12 @@ export function iniciarLoginOAuth2(providerName: string): Promise<RetornoOAuth2>
           criadoEm: Date.now(),
         }
         guardarPendente(pendente)
+        // Limpa qualquer resultado anterior
+        try {
+          localStorage.removeItem(RESULTADO_KEY)
+        } catch {
+          // ignora
+        }
         const url = trocarParametro(
           trocarParametro(provedor.authURL, 'redirect_uri', redirectURL),
           'state',
@@ -246,14 +321,40 @@ export async function concluirLoginOAuth2(): Promise<{ ok: boolean; mensagem: st
       window.location.replace('/dashboard')
       return { ok: true, mensagem: 'Entrada concluída.' }
     }
-    return { ok: true, mensagem: 'Entrada concluída. Pode fechar esta janela.' }
+    // Fecha o popup após notificar opener
+    setTimeout(() => {
+      try {
+        window.close()
+      } catch {
+        // ignora
+      }
+    }, 400)
+    return { ok: true, mensagem: 'Entrada concluída. Fechando esta janela…' }
   } catch (erro) {
     // 400 = conta não cadastrada/inativa: o servidor responde
     // "Acesso não liberado. Fale com o administrador."
     const status = (erro as { status?: number })?.status
-    const mensagem = getErrorMessage(erro)
+    let mensagem = getErrorMessage(erro)
+    if (
+      status === 400 ||
+      mensagem.toLowerCase().includes('failed to authenticate') ||
+      mensagem.toLowerCase().includes('acesso')
+    ) {
+      mensagem = 'Acesso não liberado. Fale com o administrador.'
+    }
     descartarPendente()
     notificarOpener({ tipo: 'cmx-oauth2', ok: false, mensagem, status })
+    if (!window.opener || window.opener.closed) {
+      window.location.replace('/?erro=' + encodeURIComponent(mensagem))
+    } else {
+      setTimeout(() => {
+        try {
+          window.close()
+        } catch {
+          // ignora
+        }
+      }, 1000)
+    }
     return { ok: false, mensagem }
   }
 }

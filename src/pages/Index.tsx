@@ -42,8 +42,17 @@ export default function Index() {
   }, [authChecking, isAuthenticated, navigate])
 
   // Mostra o motivo quando a sessão foi encerrada (8h, revogação ou nova senha)
+  // ou quando redirecionado com parâmetro de erro no retorno OAuth2
   useEffect(() => {
     try {
+      const params = new URLSearchParams(window.location.search)
+      const erroUrl = params.get('erro')
+      if (erroUrl) {
+        setServerError(erroUrl)
+        window.history.replaceState({}, document.title, window.location.pathname)
+        return
+      }
+
       const motivo = sessionStorage.getItem(SESSION_ENDED_KEY)
       if (motivo) {
         setServerError(motivo)
@@ -62,11 +71,18 @@ export default function Index() {
       navigate('/dashboard')
     } catch (err: unknown) {
       const status = (err as { status?: number })?.status
-      setServerError(
-        status === 400
-          ? 'Acesso não liberado. Fale com o administrador.'
-          : 'Não foi possível entrar com a Microsoft. Tente novamente.',
-      )
+      const msg = err instanceof Error ? err.message : ''
+      if (
+        status === 400 ||
+        msg.toLowerCase().includes('acesso não liberado') ||
+        msg.toLowerCase().includes('fale com o administrador')
+      ) {
+        setServerError('Acesso não liberado. Fale com o administrador.')
+      } else if (msg && !msg.toLowerCase().includes('failed to fetch')) {
+        setServerError(msg)
+      } else {
+        setServerError('Não foi possível entrar com a Microsoft. Tente novamente.')
+      }
     } finally {
       setEntrandoCom(null)
     }

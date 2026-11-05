@@ -12,11 +12,15 @@ export default function OAuth2Redirect() {
   const [mensagem, setMensagem] = useState('Retornando ao aplicativo…')
 
   useEffect(() => {
+    let ativo = true
     void concluirLoginOAuth2().then((r) => {
-      if (!r.ok) setMensagem(r.mensagem)
-      // Em caso de sucesso a janela é fechada pelo postMessage;
+      if (ativo && !r.ok) setMensagem(r.mensagem)
+      // Em caso de sucesso a janela é fechada pelo postMessage ou window.close;
       // se for a própria aba (sem opener), /dashboard já foi aberto.
     })
+    return () => {
+      ativo = false
+    }
   }, [])
 
   return (
