@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { getErrorMessage } from '@/lib/pocketbase/errors'
-import { listAtribuiveis, type PessoaAtribuivel } from '@/services/projetos'
+import { listAtribuiveis, rotuloPessoa, type PessoaAtribuivel } from '@/services/projetos'
 import { TIPO_LABEL, dataBR, type TipoEntrega } from '@/services/entregas'
 
 interface Linha {
@@ -227,7 +227,7 @@ export default function ImportarPlanner() {
                   <SelectItem value={SEM}>Fica como texto</SelectItem>
                   {pessoas.map((p) => (
                     <SelectItem key={p.id} value={p.id}>
-                      {p.nome}
+                      {rotuloPessoa(p)}
                     </SelectItem>
                   ))}
                 </SelectContent>

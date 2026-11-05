@@ -40,6 +40,7 @@ onRecordUpdateRequest((e) => {
     'email',
     'tipo_conta',
     've_cronograma',
+    'disciplinas',
   ]
   const mudou = protegidos.filter(
     (f) => body[f] !== undefined && rec.getString(f) !== orig.getString(f),

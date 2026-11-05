@@ -22,6 +22,7 @@ routerAdd(
       id: u.id,
       nome: u.getString('name') || u.getString('email').split('@')[0],
       papel: u.getString('role'),
+      disciplinas: u.getStringSlice('disciplinas'),
     }))
     return e.json(200, { items: lista })
   },

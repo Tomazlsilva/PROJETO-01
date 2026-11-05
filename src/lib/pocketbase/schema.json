@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-05T19:48:57.967Z",
+  "generatedAt": "2026-11-05T19:56:13.058Z",
   "collections": [
     {
       "name": "users",
@@ -99,6 +99,19 @@
           "type": "bool",
           "required": false,
           "system": false
+        },
+        {
+          "name": "disciplinas",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": [
+            "Hidráulica",
+            "Elétrica",
+            "Ar-condicionado",
+            "PPCI",
+            "Estrutura"
+          ]
         }
       ],
       "indexes": [

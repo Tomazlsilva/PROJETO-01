@@ -104,6 +104,11 @@ export default function Usuarios() {
                     <td className="px-4 py-3">
                       <div className="font-medium text-slate-800">{u.name || '—'}</div>
                       <div className="text-xs text-slate-500">{u.email}</div>
+                      {(u as { disciplinas?: string[] }).disciplinas?.length ? (
+                        <div className="text-xs text-[#1E3A8A] mt-0.5">
+                          {(u as { disciplinas?: string[] }).disciplinas!.join(' · ')}
+                        </div>
+                      ) : null}
                     </td>
                     <td className="px-4 py-3 min-w-[170px]">
                       <Select

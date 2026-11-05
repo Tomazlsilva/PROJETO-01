@@ -44,6 +44,7 @@ import {
   getProjeto,
   listAtribuiveis,
   listDisciplinas,
+  rotuloPessoa,
   type Disciplina,
   type PessoaAtribuivel,
 } from '@/services/projetos'
@@ -455,7 +456,7 @@ function EditorPessoas({
                 <SelectContent>
                   {pessoas.map((p) => (
                     <SelectItem key={p.id} value={p.id}>
-                      {p.nome}
+                      {rotuloPessoa(p)}
                     </SelectItem>
                   ))}
                 </SelectContent>
