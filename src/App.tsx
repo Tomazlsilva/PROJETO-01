@@ -21,6 +21,7 @@ import Baseline from './pages/Baseline'
 import Painel from './pages/Painel'
 import Mudancas from './pages/Mudancas'
 import Backups from './pages/admin/Backups'
+import ImportarPlanner from './pages/admin/ImportarPlanner'
 import Layout from './components/Layout'
 import AppShell from './components/AppShell'
 
@@ -60,6 +61,7 @@ const App = () => (
             <Route path="/admin/auditoria" element={<Auditoria />} />
             <Route path="/admin/fluxo" element={<Fluxo />} />
             <Route path="/admin/backups" element={<Backups />} />
+            <Route path="/admin/importar-planner" element={<ImportarPlanner />} />
           </Route>
           {/* ADD ALL CUSTOM ROUTES MUST BE ADDED HERE */}
         </Route>

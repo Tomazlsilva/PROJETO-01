@@ -273,6 +273,7 @@ routerAdd(
         art_em: r.getString('art_em'),
         art_por: pessoa(r.getString('art_por')),
         origem: r.getString('origem'),
+        disciplinas_texto: r.getString('disciplinas_texto'),
         disciplinas: cards,
         alocacoes: alocacoes,
         minha_janela: alocacoes.filter((a) => a.pessoa && a.pessoa.id === auth.id),

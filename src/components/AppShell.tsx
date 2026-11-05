@@ -118,6 +118,9 @@ export default function AppShell({ roles, largo }: AppShellProps) {
                 <NavLink to="/admin/backups" className={navClass}>
                   <DatabaseBackup className="w-4 h-4" /> Backups
                 </NavLink>
+                <NavLink to="/admin/importar-planner" className={navClass}>
+                  <CalendarDays className="w-4 h-4" /> Planner
+                </NavLink>
               </>
             )}
           </nav>

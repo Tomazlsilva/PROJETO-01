@@ -37,6 +37,7 @@ export interface Entrega {
   art_em: string
   art_por: Pessoa | null
   origem: string
+  disciplinas_texto?: string
   disciplinas: {
     card_id: string
     disciplina_id: string
@@ -118,9 +119,10 @@ export interface LinhaDoTempo {
   pode_editar: boolean
   entregas: (Omit<
     Entrega,
-    'projeto' | 'minha_janela' | 'pode_editar' | 'disciplinas' | 'art_por'
+    'projeto' | 'minha_janela' | 'pode_editar' | 'disciplinas' | 'art_por' | 'horas'
   > & {
     disciplinas: { card_id: string; nome: string }[]
+    horas_seg: number
   })[]
   historico: EventoEntrega[]
 }

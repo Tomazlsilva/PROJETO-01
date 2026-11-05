@@ -600,8 +600,13 @@ function EntregaDialog({
 
         <div className="space-y-4 text-sm">
           <div className="flex flex-wrap gap-2">
-            {e.disciplinas.length === 0 && (
+            {e.disciplinas.length === 0 && !e.disciplinas_texto && (
               <span className="text-slate-500">Sem disciplina ligada</span>
+            )}
+            {e.disciplinas_texto && (
+              <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-xs">
+                Planner: {e.disciplinas_texto}
+              </span>
             )}
             {e.disciplinas.map((d) => (
               <span
