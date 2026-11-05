@@ -114,8 +114,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Fluxo em duas janelas sem realtime: o redirect_uri enviado à Microsoft é
   // o host público da SPA (registrado no Portal Azure) e o popup troca o
   // código diretamente com o PocketBase — ver src/lib/oauth2.ts.
+  // O authStore pode ter sido gravado pelo popup (mesma origem, mesma aba) ou
+  // chegar por postMessage: os dois caminhos terminam com a sessão salva.
   // Só entra quem o administrador cadastrou; as regras ficam no servidor.
   const loginWithProvider = async (provider: string): Promise<RecordModel> => {
+    if (pb.authStore.isValid) {
+      const record = pb.authStore.record
+      setUser(record)
+      return record
+    }
     const retorno = await iniciarLoginOAuth2(provider)
     pb.authStore.save(retorno.token, retorno.record)
     setUser(retorno.record)

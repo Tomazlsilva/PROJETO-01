@@ -13,6 +13,16 @@ import { getErrorMessage } from '@/lib/pocketbase/errors'
 //   entre janelas da mesma origem) e abre o popup na tela da Microsoft.
 // - Popup: volta para a rota /api/oauth2-redirect da própria SPA, troca o
 //   código diretamente com o PocketBase e devolve o resultado por postMessage.
+//
+// IMPORTANTE: o authURL que o PocketBase devolve vem SEM o parâmetro
+// redirect_uri (acaba em "redirect_uri=" vazio — verificado no endpoint
+// auth-methods). O PocketBase preenche esse parâmetro só dentro do próprio
+// SDK, no método authorizeProvider(); fora dele o URL segue sem redirect_uri.
+// Por isso a função abaixo ACRESCENTA o parâmetro quando ele não existe,
+// com encodeURIComponent para a Microsoft aceitar o valor exato registrado
+// no Portal Azure (AADSTS50011 quando difere, mesmo em case/escape).
+// O state é trocado pelo valor local: o state do PocketBase pertence ao
+// realtime do SDK, que este fluxo de duas janelas não usa.
 
 const OAUTH2_REDIRECT_PATH = '/api/oauth2-redirect'
 const PENDENTE_KEY = 'cmx_oauth2_pendente'
@@ -170,7 +180,11 @@ export function iniciarLoginOAuth2(providerName: string): Promise<RetornoOAuth2>
           criadoEm: Date.now(),
         }
         guardarPendente(pendente)
-        const url = trocarParametro(provedor.authURL + redirectURL, 'state', pendente.state)
+        const url = trocarParametro(
+          trocarParametro(provedor.authURL, 'redirect_uri', redirectURL),
+          'state',
+          pendente.state,
+        )
         if (popup && !popup.closed) {
           popup.location.href = url
         } else {
