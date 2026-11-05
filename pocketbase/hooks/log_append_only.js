@@ -11,6 +11,7 @@ onRecordUpdate(
   'transicoes',
   'projeto_historico',
   'tempo_importacoes',
+  'entrega_historico', // SPEC-1-008 (CA-1-008-13)
 )
 
 onRecordDelete(
@@ -30,4 +31,5 @@ onRecordDelete(
   'transicoes',
   'projeto_historico',
   'tempo_importacoes',
+  'entrega_historico',
 )
