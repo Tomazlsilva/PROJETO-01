@@ -76,9 +76,8 @@ export interface PessoaAtribuivel {
   disciplinas?: string[]
 }
 
-// "Henrique Fonseca · Elétrica" — ajuda a achar quem é de cada disciplina
-export const rotuloPessoa = (p: PessoaAtribuivel) =>
-  p.disciplinas && p.disciplinas.length ? `${p.nome} · ${p.disciplinas.join('/')}` : p.nome
+// Só o nome nas listas de pessoas (as disciplinas ficam na tela de Usuários)
+export const rotuloPessoa = (p: PessoaAtribuivel) => p.nome
 
 export interface Similar {
   id?: string
