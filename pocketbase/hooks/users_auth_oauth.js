@@ -1,7 +1,7 @@
 // Login pela conta Microsoft (ou outro provedor OAuth configurado no Skip).
 // Mesmas regras do login por senha: só entra quem o administrador cadastrou
-// (nunca cria conta sozinho), conta ativa e não bloqueada, sessão de 30 dias renovada
-// pelo uso, auditoria e foto do perfil puxada da Microsoft a cada login.
+// (nunca cria conta sozinho), conta ativa e não bloqueada, sessão de 20h, auditoria e
+// foto do perfil puxada da Microsoft a cada login.
 
 onRecordAuthWithOAuth2Request((e) => {
   const audit = (action, outcome, targetId, details) => {
@@ -41,7 +41,7 @@ onRecordAuthWithOAuth2Request((e) => {
   rec.set('failed_attempts', 0)
   rec.set('failed_window_start', '')
   rec.set('session_issued_at', fmt(agora))
-  rec.set('session_expires_at', fmt(new Date(agora.getTime() + 30 * 24 * 60 * 60 * 1000)))
+  rec.set('session_expires_at', fmt(new Date(agora.getTime() + 20 * 60 * 60 * 1000)))
 
   // Foto do perfil Microsoft (Graph). Se não tiver foto ou falhar, segue o login sem ela.
   if (provedor === 'microsoft') {

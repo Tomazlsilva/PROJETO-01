@@ -3,8 +3,9 @@ import pb from '@/lib/pocketbase/client'
 import type { RecordModel } from 'pocketbase'
 import { asRole, type Role } from '@/lib/permissions'
 
-// Sessão: 30 dias, empurrada para frente a cada renovação enquanto a pessoa usa.
-// A renovação troca o token (o anterior deixa de valer).
+// Sessão: limite absoluto de 20h a partir do login, definido no servidor.
+// A renovação troca o token (o anterior deixa de valer) e nunca estende as 20h.
+// Ao vencer, volta para o login sem mensagem.
 const REFRESH_INTERVAL_MS = 30 * 60 * 1000
 export const SESSION_ENDED_KEY = 'central_session_ended'
 
@@ -56,7 +57,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (err) {
       const status = (err as { status?: number })?.status
       if (status === 401 || status === 403 || status === 404) {
-        endSession('Sua sessão terminou. Entre novamente.')
+        endSession()
       }
     }
   }, [endSession])
@@ -84,20 +85,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => clearInterval(id)
   }, [user, refresh])
 
-  // Encerra se a sessão vencer (30 dias sem uso)
+  // Encerra no fim das 20h, sem aviso
   useEffect(() => {
     if (expiryTimer.current) clearTimeout(expiryTimer.current)
     const exp = sessionExpiry(user)
     if (!user || !exp) return
     const ms = exp - Date.now()
     if (ms <= 0) {
-      endSession('Sua sessão terminou. Entre novamente.')
+      endSession()
       return
     }
-    expiryTimer.current = setTimeout(
-      () => endSession('Sua sessão terminou. Entre novamente.'),
-      Math.min(ms, 2_147_000_000),
-    )
+    expiryTimer.current = setTimeout(() => endSession(), Math.min(ms, 2_147_000_000))
     return () => {
       if (expiryTimer.current) clearTimeout(expiryTimer.current)
     }
