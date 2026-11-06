@@ -33,7 +33,6 @@ import {
   listUsers,
   setUserActive,
   setUserPassword,
-  setVeCronograma,
   unlockUser,
   updateUserRole,
   type UserRecord,
@@ -156,23 +155,6 @@ export default function Usuarios() {
                           ))}
                         </SelectContent>
                       </Select>
-                      {u.role === 'projetista' && (
-                        <label className="mt-1.5 flex items-center gap-1.5 text-xs text-slate-500">
-                          <Checkbox
-                            checked={!!u.ve_cronograma}
-                            disabled={!u.active}
-                            onCheckedChange={(c) =>
-                              run(
-                                () => setVeCronograma(u.id, c === true),
-                                c === true
-                                  ? 'Passa a ver o cronograma inteiro.'
-                                  : 'Volta a ver só os próprios projetos.',
-                              )
-                            }
-                          />
-                          Vê o cronograma inteiro
-                        </label>
-                      )}
                     </td>
                     <td className="px-4 py-3">
                       {!u.active ? (

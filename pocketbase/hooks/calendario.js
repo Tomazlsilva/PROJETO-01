@@ -3,9 +3,9 @@
 // Devolve as entregas com data no período ou com janela de execução que cruza o período,
 // as janelas por pessoa, os feriados do período (gerados por regra na primeira consulta
 // do ano) e o que cada um pode fazer.
-// Escopo: administrador/diretor, administrativo e quem tem "vê o cronograma" → tudo;
-// coordenador → projetos que coordena ou em que está; projetista → projetos em que está,
-// no máximo 7 dias por consulta (a semana). Busca sem diferenciar acento e maiúscula.
+// Escopo: todo mundo vê todas as entregas de todos os projetos, até 2 meses por consulta.
+// Editar continua só com administrador e coordenador do projeto.
+// Busca sem diferenciar acento e maiúscula.
 routerAdd(
   'GET',
   '/backend/v1/calendario',
@@ -21,7 +21,7 @@ routerAdd(
       throw new UnauthorizedError('Sessão inválida ou expirada.')
     }
     const papel = auth.getString('role')
-    const veTudo = papel === 'admin' || papel === 'administrativo' || auth.getBool('ve_cronograma')
+    const veTudo = true
     const q = e.request.url.query()
     const dataOk = (d) =>
       /^\d{4}-\d{2}-\d{2}$/.test(d) && new Date(d + 'T12:00:00Z').toISOString().slice(0, 10) === d

@@ -1,7 +1,7 @@
 // SPEC-1-008 (T1.42) — linha do tempo do projeto: todas as entregas, em ordem de data,
 // com pessoas, situação e o histórico completo (antes/depois, autor, horário).
 //   GET /backend/v1/entregas/projeto/{id}
-// Quem vê o projeto (regra de visibilidade de projetos) ou tem "vê o cronograma".
+// Todo mundo logado vê a linha do tempo de qualquer projeto (calendário aberto a todos).
 routerAdd(
   'GET',
   '/backend/v1/entregas/projeto/{id}',
@@ -21,14 +21,7 @@ routerAdd(
     try {
       projeto = $app.findRecordById('projetos', id)
     } catch (_) {}
-    const pode =
-      !!projeto &&
-      (auth.getBool('ve_cronograma') ||
-        $app.canAccessRecord(
-          projeto,
-          e.requestInfo(),
-          $app.findCollectionByNameOrId('projetos').viewRule,
-        ))
+    const pode = !!projeto
     if (!pode) {
       try {
         const a = new Record($app.findCollectionByNameOrId('auth_audit'))

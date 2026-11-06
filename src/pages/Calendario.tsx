@@ -145,9 +145,8 @@ function useExecutor(aoConcluir: () => void) {
 }
 
 export default function Calendario() {
-  const { role, user } = useAuth()
-  const podeMes =
-    role !== 'projetista' || !!(user as { ve_cronograma?: boolean } | null)?.ve_cronograma
+  // todo mundo vê o calendário inteiro, em semana ou mês
+  const podeMes = true
   const [modo, setModo] = useState<'semana' | 'mes'>('semana')
   const [ref, setRef] = useState(hojeBR())
   const [busca, setBusca] = useState('')
