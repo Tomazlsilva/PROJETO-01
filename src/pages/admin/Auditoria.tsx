@@ -58,7 +58,7 @@ export default function Auditoria() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-extrabold text-slate-900">Auditoria de acesso</h1>
+          <h1 className="text-2xl font-extrabold text-slate-900">Acessos e ações</h1>
           <p className="text-sm text-slate-500">
             Registro somente de inclusão — não pode ser editado nem apagado.
           </p>

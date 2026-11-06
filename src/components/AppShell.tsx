@@ -125,11 +125,11 @@ export default function AppShell({ roles, largo }: AppShellProps) {
           {
             titulo: 'Administração',
             itens: [
-              { to: '/admin/usuarios', rotulo: 'Usuários', icone: Users },
-              { to: '/admin/fluxo', rotulo: 'Fluxo', icone: Workflow },
-              { to: '/admin/auditoria', rotulo: 'Auditoria', icone: ScrollText },
-              { to: '/admin/backups', rotulo: 'Backups', icone: DatabaseBackup },
-              { to: '/admin/importar-planner', rotulo: 'Planner', icone: FileUp },
+              { to: '/admin/usuarios', rotulo: 'Equipe', icone: Users },
+              { to: '/admin/fluxo', rotulo: 'Etapas do projeto', icone: Workflow },
+              { to: '/admin/auditoria', rotulo: 'Acessos e ações', icone: ScrollText },
+              { to: '/admin/backups', rotulo: 'Cópias de segurança', icone: DatabaseBackup },
+              { to: '/admin/importar-planner', rotulo: 'Importar do Planner', icone: FileUp },
             ],
           },
         ]

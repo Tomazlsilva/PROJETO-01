@@ -153,7 +153,7 @@ export default function Fluxo() {
     <div className="space-y-6">
       <div>
         <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-2">
-          <Workflow className="w-6 h-6 text-[#1E3A8A]" /> Fluxo do Kanban
+          <Workflow className="w-6 h-6 text-[#1E3A8A]" /> Etapas do projeto
         </h1>
         <p className="text-sm text-slate-500">
           Versão vigente: {dados.ativa?.numero ?? '—'}. Cada alteração cria uma versão nova e pode
@@ -232,8 +232,8 @@ export default function Fluxo() {
           ))}
         </ul>
         <p className="text-xs text-slate-500">
-          “Aprovado” não pode ser inativada. Etapa inativa some do Kanban e o fluxo passa direto por
-          ela.
+          “Aprovado” não pode ser inativada. Etapa inativa some do quadro de Projetos e os cards
+          passam direto por ela.
         </p>
       </section>
 

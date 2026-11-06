@@ -69,7 +69,7 @@ export default function Usuarios() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-extrabold text-slate-900">Usuários</h1>
+          <h1 className="text-2xl font-extrabold text-slate-900">Equipe</h1>
           <p className="text-sm text-slate-500">
             Contas individuais e papéis. Revogar encerra as sessões e preserva o histórico. Apagar
             só vale para conta sem histórico (cadastro errado ou nunca usado).

@@ -75,7 +75,7 @@ export default function Backups() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-2">
-            <DatabaseBackup className="w-6 h-6 text-[#1E3A8A]" /> Backups
+            <DatabaseBackup className="w-6 h-6 text-[#1E3A8A]" /> Cópias de segurança
           </h1>
           <p className="text-sm text-slate-500">
             Cópia diária automática às 03:00 · criptografada (AES-256-GCM) · guardada por{' '}

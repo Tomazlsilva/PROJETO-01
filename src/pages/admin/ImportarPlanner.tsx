@@ -147,7 +147,7 @@ export default function ImportarPlanner() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-extrabold text-slate-900">Importar Planner</h1>
+          <h1 className="text-2xl font-extrabold text-slate-900">Importar do Planner</h1>
           <p className="text-sm text-slate-500">
             CRONOGRAMA exportado em {ano(s.lote.exportado_em)} · recorte desde{' '}
             {ano(s.lote.inicio_recorte)} (45 dias) mais os itens futuros dos cartões abertos.
