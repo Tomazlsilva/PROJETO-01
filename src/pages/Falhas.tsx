@@ -56,7 +56,7 @@ export default function Falhas() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-2">
-            <AlertTriangle className="w-6 h-6 text-amber-600" /> Caixa de falhas
+            <AlertTriangle className="w-6 h-6 text-amber-600" /> Pendências
           </h1>
           <p className="text-sm text-slate-500">
             Pendências que não chegaram ao destinatário certo. A pendência nunca se perde: fica com
@@ -80,7 +80,7 @@ export default function Falhas() {
       ) : itens.length === 0 ? (
         <div className="bg-white border border-slate-200 rounded-xl p-8 text-center text-sm text-slate-500 flex flex-col items-center gap-2">
           <CheckCircle2 className="w-8 h-8 text-green-600" />
-          Nenhuma falha pendente.
+          Nenhuma pendência travada.
         </div>
       ) : (
         <ul className="space-y-3">

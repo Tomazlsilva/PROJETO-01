@@ -91,7 +91,7 @@ export default function Fila() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-2">
-            <ListTodo className="w-6 h-6 text-[#1E3A8A]" /> Fila de trabalho
+            <ListTodo className="w-6 h-6 text-[#1E3A8A]" /> Minhas tarefas
           </h1>
           <p className="text-sm text-slate-500">
             Ordem: bloqueio vencido, prioridade (Urgente → Baixa), prazo e criação.
@@ -106,7 +106,7 @@ export default function Fila() {
         <div className="inline-flex rounded-lg border border-slate-200 bg-white p-1">
           {(
             [
-              ['minha', 'Minha fila', ListTodo],
+              ['minha', 'Minhas', ListTodo],
               ['equipe', 'Equipe', Users],
             ] as const
           ).map(([k, rot, Icone]) => (

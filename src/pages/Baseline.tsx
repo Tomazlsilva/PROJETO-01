@@ -52,7 +52,7 @@ export default function Baseline() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-2">
-            <BarChart3 className="w-6 h-6 text-[#1E3A8A]" /> Baseline de touch time
+            <BarChart3 className="w-6 h-6 text-[#1E3A8A]" /> Apontamentos
           </h1>
           <p className="text-sm text-slate-500">
             “Antes” = histórico importado · “Depois” = apontado na Central (modo sombra).

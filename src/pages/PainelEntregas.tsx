@@ -154,7 +154,7 @@ export default function PainelEntregas() {
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-extrabold text-slate-900">Indicadores de entregas</h1>
+          <h1 className="text-2xl font-extrabold text-slate-900">Entregas</h1>
           <p className="text-sm text-slate-500">
             {r?.escopo === 'equipe' ? 'Projetos que você coordena.' : 'Todos os projetos.'} Clique
             em um número para ver os registros que o compõem.

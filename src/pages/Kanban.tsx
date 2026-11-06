@@ -251,7 +251,7 @@ export default function Kanban() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900">Kanban da produção</h1>
+          <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900">Projetos</h1>
           <p className="text-sm text-slate-500">
             Cada card é uma disciplina de um projeto. Arraste para mudar de etapa ou clique para ver
             detalhes.

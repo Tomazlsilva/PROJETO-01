@@ -81,7 +81,7 @@ export default function Painel() {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-2">
-            <Gauge className="w-6 h-6 text-[#1E3A8A]" /> Painel
+            <Gauge className="w-6 h-6 text-[#1E3A8A]" /> Indicadores
           </h1>
           <p className="text-sm text-slate-500 flex items-center gap-1">
             <Lock className="w-3.5 h-3.5" /> Somente leitura ·{' '}

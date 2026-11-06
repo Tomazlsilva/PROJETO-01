@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react'
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import React, { useEffect, useState } from 'react'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   LogOut,
   User,
@@ -16,11 +16,17 @@ import {
   History,
   DatabaseBackup,
   CalendarDays,
+  Clock,
+  FileUp,
+  Menu,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from 'lucide-react'
 import { TimerTopo } from '@/components/TimerTopo'
 import { Button } from '@/components/ui/button'
 import { CmxLogo } from '@/components/CmxLogo'
 import { Notificacoes } from '@/components/Notificacoes'
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { useAuth } from '@/contexts/AuthContext'
 import { PAPEL_LABEL, papelDe, type Role } from '@/lib/permissions'
 
@@ -30,15 +36,51 @@ interface AppShellProps {
   largo?: boolean
 }
 
+interface ItemMenu {
+  to: string
+  rotulo: string
+  icone: React.ComponentType<{ className?: string }>
+  end?: boolean
+}
+
+interface GrupoMenu {
+  titulo: string
+  itens: ItemMenu[]
+}
+
+const CHAVE_RECOLHIDO = 'central.menu.recolhido'
+
+const lerRecolhido = () => {
+  try {
+    return window.localStorage.getItem(CHAVE_RECOLHIDO) === '1'
+  } catch {
+    return false
+  }
+}
+
+const gravarRecolhido = (v: boolean) => {
+  try {
+    window.localStorage.setItem(CHAVE_RECOLHIDO, v ? '1' : '0')
+  } catch {
+    // sem armazenamento: só não lembra a escolha
+  }
+}
+
 // Casca das páginas autenticadas: exige sessão e, opcionalmente, papéis.
 // Esconder na interface é conveniência; quem bloqueia de fato é o servidor.
 export default function AppShell({ roles, largo }: AppShellProps) {
   const { user, role, isAdmin, isAuthenticated, isLoading, logout } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+  const [recolhido, setRecolhido] = useState(lerRecolhido)
+  const [menuCelular, setMenuCelular] = useState(false)
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) navigate('/', { replace: true })
   }, [isLoading, isAuthenticated, navigate])
+
+  // fecha o menu do celular ao trocar de página
+  useEffect(() => setMenuCelular(false), [location.pathname])
 
   if (isLoading || !isAuthenticated) {
     return (
@@ -49,166 +91,195 @@ export default function AppShell({ roles, largo }: AppShellProps) {
   }
 
   const allowed = !roles || (role !== null && roles.includes(role))
-  const veFalhas = role === 'admin' || role === 'coordenador'
-  const veBaseline = veFalhas || role === 'administrativo'
+  const vePendencias = role === 'admin' || role === 'coordenador'
+  const veAcompanhamento = vePendencias || role === 'administrativo'
   const papel = papelDe(user as { role?: unknown; tipo_conta?: unknown } | null)
   const userName = (user?.name as string) || (user?.email as string)?.split('@')[0] || 'Usuário'
 
-  const navClass = ({ isActive }: { isActive: boolean }) =>
-    `flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-      isActive
-        ? 'bg-blue-50 text-[#1E3A8A]'
-        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-    }`
+  const grupos: GrupoMenu[] = [
+    {
+      titulo: 'Trabalho',
+      itens: [
+        { to: '/dashboard', rotulo: 'Início', icone: LayoutDashboard },
+        { to: '/fila', rotulo: 'Minhas tarefas', icone: ListTodo },
+        { to: '/kanban', rotulo: 'Projetos', icone: KanbanSquare },
+        { to: '/calendario', rotulo: 'Calendário', icone: CalendarDays },
+        ...(vePendencias ? [{ to: '/falhas', rotulo: 'Pendências', icone: AlertTriangle }] : []),
+      ],
+    },
+    ...(veAcompanhamento
+      ? [
+          {
+            titulo: 'Acompanhamento',
+            itens: [
+              { to: '/painel', rotulo: 'Indicadores', icone: Gauge, end: true },
+              { to: '/painel/entregas', rotulo: 'Entregas', icone: BarChart3 },
+              { to: '/baseline', rotulo: 'Apontamentos', icone: Clock },
+              { to: '/mudancas', rotulo: 'Registro de alterações', icone: History },
+            ],
+          },
+        ]
+      : []),
+    ...(isAdmin
+      ? [
+          {
+            titulo: 'Administração',
+            itens: [
+              { to: '/admin/usuarios', rotulo: 'Usuários', icone: Users },
+              { to: '/admin/fluxo', rotulo: 'Fluxo', icone: Workflow },
+              { to: '/admin/auditoria', rotulo: 'Auditoria', icone: ScrollText },
+              { to: '/admin/backups', rotulo: 'Backups', icone: DatabaseBackup },
+              { to: '/admin/importar-planner', rotulo: 'Planner', icone: FileUp },
+            ],
+          },
+        ]
+      : []),
+  ]
+
+  const alternarRecolhido = () => {
+    const v = !recolhido
+    setRecolhido(v)
+    gravarRecolhido(v)
+  }
+
+  const listaMenu = (compacto: boolean) => (
+    <nav className="flex flex-col gap-5">
+      {grupos.map((g) => (
+        <div key={g.titulo}>
+          {compacto ? (
+            <div className="mx-3 mb-2 border-t border-slate-200" />
+          ) : (
+            <div className="px-3 mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+              {g.titulo}
+            </div>
+          )}
+          <div className="flex flex-col gap-0.5">
+            {g.itens.map((it) => {
+              const Icone = it.icone
+              return (
+                <NavLink
+                  key={it.to}
+                  to={it.to}
+                  end={it.end}
+                  title={compacto ? it.rotulo : undefined}
+                  className={({ isActive }) =>
+                    `flex items-center gap-2.5 rounded-md text-sm font-medium transition-colors ${
+                      compacto ? 'justify-center px-2 py-2' : 'px-3 py-2'
+                    } ${
+                      isActive
+                        ? 'bg-blue-50 text-[#1E3A8A]'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                    }`
+                  }
+                >
+                  <Icone className="w-4 h-4 shrink-0" />
+                  {!compacto && <span className="truncate">{it.rotulo}</span>}
+                </NavLink>
+              )
+            })}
+          </div>
+        </div>
+      ))}
+    </nav>
+  )
 
   return (
-    <div className="min-h-screen bg-[#F5F7FA] text-slate-800 flex flex-col">
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-30 px-4 sm:px-8 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-4 min-w-0">
-          <CmxLogo variant="light" size="sm" />
-          <nav className="hidden md:flex items-center gap-1 pl-4 border-l border-slate-200">
-            <NavLink to="/dashboard" className={navClass}>
-              <LayoutDashboard className="w-4 h-4" /> Início
-            </NavLink>
-            <NavLink to="/fila" className={navClass}>
-              <ListTodo className="w-4 h-4" /> Fila
-            </NavLink>
-            <NavLink to="/kanban" className={navClass}>
-              <KanbanSquare className="w-4 h-4" /> Kanban
-            </NavLink>
-            <NavLink to="/calendario" className={navClass}>
-              <CalendarDays className="w-4 h-4" /> Calendário
-            </NavLink>
-            {veFalhas && (
-              <NavLink to="/falhas" className={navClass}>
-                <AlertTriangle className="w-4 h-4" /> Falhas
-              </NavLink>
-            )}
-            {veBaseline && (
-              <NavLink to="/painel" end className={navClass}>
-                <Gauge className="w-4 h-4" /> Painel
-              </NavLink>
-            )}
-            {veBaseline && (
-              <NavLink to="/painel/entregas" className={navClass}>
-                <BarChart3 className="w-4 h-4" /> Entregas
-              </NavLink>
-            )}
-            {veBaseline && (
-              <NavLink to="/baseline" className={navClass}>
-                <BarChart3 className="w-4 h-4" /> Baseline
-              </NavLink>
-            )}
-            {veBaseline && (
-              <NavLink to="/mudancas" className={navClass}>
-                <History className="w-4 h-4" /> Mudanças
-              </NavLink>
-            )}
-            {isAdmin && (
-              <>
-                <NavLink to="/admin/usuarios" className={navClass}>
-                  <Users className="w-4 h-4" /> Usuários
-                </NavLink>
-                <NavLink to="/admin/fluxo" className={navClass}>
-                  <Workflow className="w-4 h-4" /> Fluxo
-                </NavLink>
-                <NavLink to="/admin/auditoria" className={navClass}>
-                  <ScrollText className="w-4 h-4" /> Auditoria
-                </NavLink>
-                <NavLink to="/admin/backups" className={navClass}>
-                  <DatabaseBackup className="w-4 h-4" /> Backups
-                </NavLink>
-                <NavLink to="/admin/importar-planner" className={navClass}>
-                  <CalendarDays className="w-4 h-4" /> Planner
-                </NavLink>
-              </>
-            )}
-          </nav>
-        </div>
-        <div className="flex items-center gap-3">
-          <TimerTopo />
-          <Notificacoes />
-          <div className="hidden sm:block text-right">
-            <div className="text-sm font-semibold text-slate-800 leading-tight">{userName}</div>
-            <div className="text-xs text-slate-500">{papel ? PAPEL_LABEL[papel] : 'Sem papel'}</div>
-          </div>
-          <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center border border-blue-200">
-            <User className="w-4 h-4" />
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              logout()
-              navigate('/', { replace: true })
-            }}
-            className="text-slate-600 hover:text-red-600 hover:border-red-200 hover:bg-red-50 flex items-center gap-1.5"
-          >
-            <LogOut className="w-4 h-4" />
-            <span className="hidden sm:inline">Sair</span>
-          </Button>
-        </div>
-      </header>
-      <nav className="md:hidden flex gap-1 px-4 py-2 bg-white border-b border-slate-200 overflow-x-auto">
-        <NavLink to="/dashboard" className={navClass}>
-          Início
-        </NavLink>
-        <NavLink to="/fila" className={navClass}>
-          Fila
-        </NavLink>
-        <NavLink to="/kanban" className={navClass}>
-          Kanban
-        </NavLink>
-        <NavLink to="/calendario" className={navClass}>
-          Calendário
-        </NavLink>
-        {veFalhas && (
-          <NavLink to="/falhas" className={navClass}>
-            Falhas
-          </NavLink>
-        )}
-        {veBaseline && (
-          <NavLink to="/painel" end className={navClass}>
-            Painel
-          </NavLink>
-        )}
-        {veBaseline && (
-          <NavLink to="/painel/entregas" className={navClass}>
-            Entregas
-          </NavLink>
-        )}
-        {veBaseline && (
-          <NavLink to="/baseline" className={navClass}>
-            Baseline
-          </NavLink>
-        )}
-        {veBaseline && (
-          <NavLink to="/mudancas" className={navClass}>
-            Mudanças
-          </NavLink>
-        )}
-        {isAdmin && (
-          <>
-            <NavLink to="/admin/usuarios" className={navClass}>
-              Usuários
-            </NavLink>
-            <NavLink to="/admin/fluxo" className={navClass}>
-              Fluxo
-            </NavLink>
-            <NavLink to="/admin/auditoria" className={navClass}>
-              Auditoria
-            </NavLink>
-            <NavLink to="/admin/backups" className={navClass}>
-              Backups
-            </NavLink>
-          </>
-        )}
-      </nav>
-      <main
-        className={`flex-1 w-full mx-auto p-4 sm:p-8 min-w-0 ${largo ? 'max-w-[1800px]' : 'max-w-6xl'}`}
+    <div className="min-h-screen bg-[#F5F7FA] text-slate-800 flex">
+      {/* Menu lateral (computador) */}
+      <aside
+        className={`hidden md:flex flex-col shrink-0 bg-white border-r border-slate-200 sticky top-0 h-screen transition-[width] duration-200 ${
+          recolhido ? 'w-16' : 'w-60'
+        }`}
       >
-        {allowed ? <Outlet /> : <AcessoNegado />}
-      </main>
+        <div
+          className={`h-16 flex items-center border-b border-slate-200 ${
+            recolhido ? 'justify-center' : 'px-4'
+          }`}
+        >
+          {recolhido ? (
+            <span className="text-lg font-extrabold text-[#1E3A8A]">G</span>
+          ) : (
+            <CmxLogo variant="light" size="sm" />
+          )}
+        </div>
+        <div className="flex-1 overflow-y-auto py-4 px-2">{listaMenu(recolhido)}</div>
+        <button
+          type="button"
+          onClick={alternarRecolhido}
+          className={`h-11 border-t border-slate-200 flex items-center gap-2 text-xs text-slate-500 hover:text-slate-800 hover:bg-slate-50 ${
+            recolhido ? 'justify-center' : 'px-4'
+          }`}
+          title={recolhido ? 'Abrir menu' : 'Recolher menu'}
+        >
+          {recolhido ? (
+            <PanelLeftOpen className="w-4 h-4" />
+          ) : (
+            <>
+              <PanelLeftClose className="w-4 h-4" /> Recolher menu
+            </>
+          )}
+        </button>
+      </aside>
+
+      {/* Menu do celular */}
+      <Sheet open={menuCelular} onOpenChange={setMenuCelular}>
+        <SheetContent side="left" className="w-64 p-0 flex flex-col">
+          <SheetTitle className="sr-only">Menu</SheetTitle>
+          <div className="h-16 flex items-center px-4 border-b border-slate-200">
+            <CmxLogo variant="light" size="sm" />
+          </div>
+          <div className="flex-1 overflow-y-auto py-4 px-2">{listaMenu(false)}</div>
+        </SheetContent>
+      </Sheet>
+
+      <div className="flex-1 min-w-0 flex flex-col">
+        <header className="bg-white border-b border-slate-200 sticky top-0 z-30 px-4 sm:px-8 h-16 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden"
+              onClick={() => setMenuCelular(true)}
+              aria-label="Abrir menu"
+            >
+              <Menu className="w-5 h-5" />
+            </Button>
+            <div className="md:hidden">
+              <CmxLogo variant="light" size="sm" />
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <TimerTopo />
+            <Notificacoes />
+            <div className="hidden sm:block text-right">
+              <div className="text-sm font-semibold text-slate-800 leading-tight">{userName}</div>
+              <div className="text-xs text-slate-500">
+                {papel ? PAPEL_LABEL[papel] : 'Sem papel'}
+              </div>
+            </div>
+            <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center border border-blue-200">
+              <User className="w-4 h-4" />
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                logout()
+                navigate('/', { replace: true })
+              }}
+              className="text-slate-600 hover:text-red-600 hover:border-red-200 hover:bg-red-50 flex items-center gap-1.5"
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="hidden sm:inline">Sair</span>
+            </Button>
+          </div>
+        </header>
+        <main
+          className={`flex-1 w-full mx-auto p-4 sm:p-8 min-w-0 ${largo ? 'max-w-[1800px]' : 'max-w-6xl'}`}
+        >
+          {allowed ? <Outlet /> : <AcessoNegado />}
+        </main>
+      </div>
     </div>
   )
 }

@@ -76,7 +76,7 @@ export default function Mudancas() {
     <div className="space-y-5">
       <div>
         <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-2">
-          <History className="w-6 h-6 text-[#1E3A8A]" /> Histórico de mudanças
+          <History className="w-6 h-6 text-[#1E3A8A]" /> Registro de alterações
         </h1>
         <p className="text-sm text-slate-500">
           Estado, prioridade, responsável, prazo, bloqueios, pendências e correções de tempo. Os
