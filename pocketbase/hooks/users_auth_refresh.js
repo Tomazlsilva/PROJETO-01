@@ -1,6 +1,6 @@
-// SPEC-1-001 (CA-1-001-14) — renovação de sessão.
-// Não estende além das 8h do login e rotaciona a tokenKey: o token anterior
-// deixa de ser aceito assim que o novo é emitido.
+// Renovação de sessão: enquanto a pessoa usa a Central, a sessão é empurrada para
+// 30 dias à frente (só cai depois de 30 dias sem abrir). Rotaciona a tokenKey: o token
+// anterior deixa de ser aceito assim que o novo é emitido. Revogar continua cortando na hora.
 onRecordAuthRefreshRequest((e) => {
   const rec = e.record
   if (!rec || !rec.getBool('active')) {
@@ -22,6 +22,10 @@ onRecordAuthRefreshRequest((e) => {
     }
     throw new UnauthorizedError('Sessão expirada. Entre novamente.')
   }
+  rec.set(
+    'session_expires_at',
+    new Date(Date.now() + 30 * 24 * 3600000).toISOString().replace('T', ' '),
+  )
   rec.refreshTokenKey()
   $app.saveNoValidate(rec)
   return e.next()

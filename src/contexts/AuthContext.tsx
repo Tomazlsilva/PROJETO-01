@@ -3,8 +3,8 @@ import pb from '@/lib/pocketbase/client'
 import type { RecordModel } from 'pocketbase'
 import { asRole, type Role } from '@/lib/permissions'
 
-// Sessão (SPEC-1-001): validade absoluta de 8h definida no servidor no login.
-// A renovação troca o token (o anterior deixa de valer) e nunca estende as 8h.
+// Sessão: 30 dias, empurrada para frente a cada renovação enquanto a pessoa usa.
+// A renovação troca o token (o anterior deixa de valer).
 const REFRESH_INTERVAL_MS = 30 * 60 * 1000
 export const SESSION_ENDED_KEY = 'central_session_ended'
 
@@ -84,18 +84,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => clearInterval(id)
   }, [user, refresh])
 
-  // Encerra exatamente no fim das 8h
+  // Encerra se a sessão vencer (30 dias sem uso)
   useEffect(() => {
     if (expiryTimer.current) clearTimeout(expiryTimer.current)
     const exp = sessionExpiry(user)
     if (!user || !exp) return
     const ms = exp - Date.now()
     if (ms <= 0) {
-      endSession('Sua sessão de 8 horas terminou. Entre novamente.')
+      endSession('Sua sessão terminou. Entre novamente.')
       return
     }
     expiryTimer.current = setTimeout(
-      () => endSession('Sua sessão de 8 horas terminou. Entre novamente.'),
+      () => endSession('Sua sessão terminou. Entre novamente.'),
       Math.min(ms, 2_147_000_000),
     )
     return () => {

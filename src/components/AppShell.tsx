@@ -28,6 +28,7 @@ import { CmxLogo } from '@/components/CmxLogo'
 import { Notificacoes } from '@/components/Notificacoes'
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { useAuth } from '@/contexts/AuthContext'
+import pb from '@/lib/pocketbase/client'
 import { PAPEL_LABEL, papelDe, type Role } from '@/lib/permissions'
 
 interface AppShellProps {
@@ -95,6 +96,8 @@ export default function AppShell({ roles, largo }: AppShellProps) {
   const veAcompanhamento = vePendencias || role === 'administrativo'
   const papel = papelDe(user as { role?: unknown; tipo_conta?: unknown } | null)
   const userName = (user?.name as string) || (user?.email as string)?.split('@')[0] || 'Usuário'
+  const foto =
+    user && user.avatar ? pb.files.getURL(user, user.avatar as string, { thumb: '100x100' }) : ''
 
   const grupos: GrupoMenu[] = [
     {
@@ -257,8 +260,12 @@ export default function AppShell({ roles, largo }: AppShellProps) {
                 {papel ? PAPEL_LABEL[papel] : 'Sem papel'}
               </div>
             </div>
-            <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center border border-blue-200">
-              <User className="w-4 h-4" />
+            <div className="w-9 h-9 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center border border-blue-200 overflow-hidden">
+              {foto ? (
+                <img src={foto} alt={userName} className="w-full h-full object-cover" />
+              ) : (
+                <User className="w-4 h-4" />
+              )}
             </div>
             <Button
               variant="outline"

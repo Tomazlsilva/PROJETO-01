@@ -1,7 +1,7 @@
 // SPEC-1-001 — login por senha.
 // - mensagem única para conta inexistente, senha errada, conta inativa ou bloqueada;
 // - 5 tentativas inválidas em 15 min bloqueiam a conta por 15 min (auditado);
-// - sucesso abre sessão com validade absoluta de 8h (session_expires_at).
+// - sucesso abre sessão de 30 dias (session_expires_at), renovada pelo uso.
 onRecordAuthWithPasswordRequest((e) => {
   const audit = (action, outcome, targetId, details) => {
     try {
@@ -21,7 +21,7 @@ onRecordAuthWithPasswordRequest((e) => {
   const GENERIC = 'Failed to authenticate.'
   const JANELA_MS = 15 * 60 * 1000
   const LIMITE = 5
-  const SESSAO_MS = 8 * 60 * 60 * 1000
+  const SESSAO_MS = 30 * 24 * 60 * 60 * 1000
 
   const rec = e.record
   if (!rec) {

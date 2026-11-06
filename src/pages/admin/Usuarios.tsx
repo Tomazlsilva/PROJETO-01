@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useAuth } from '@/contexts/AuthContext'
+import pb from '@/lib/pocketbase/client'
 import { PAPEIS, PAPEL_LABEL, papelDe, type Papel } from '@/lib/permissions'
 import { Checkbox } from '@/components/ui/checkbox'
 import { getErrorMessage } from '@/lib/pocketbase/errors'
@@ -105,19 +106,36 @@ export default function Usuarios() {
                 return (
                   <tr key={u.id} className={u.active ? '' : 'bg-slate-50/70 text-slate-400'}>
                     <td className="px-4 py-3">
-                      <div className="font-medium text-slate-800">{u.name || '—'}</div>
-                      <div className="text-xs text-slate-500">{u.email}</div>
-                      <button
-                        type="button"
-                        onClick={() => setDiscPara(u)}
-                        title="Alterar disciplinas"
-                        className="mt-0.5 inline-flex items-center gap-1 text-xs text-[#1E3A8A] hover:underline"
-                      >
-                        {(u as { disciplinas?: string[] }).disciplinas?.length
-                          ? (u as { disciplinas?: string[] }).disciplinas!.join(' · ')
-                          : 'Sem disciplina'}
-                        <Pencil className="w-3 h-3 opacity-60" />
-                      </button>
+                      <div className="flex items-start gap-3">
+                        <div className="w-9 h-9 shrink-0 rounded-full bg-blue-100 text-blue-800 border border-blue-200 overflow-hidden flex items-center justify-center text-xs font-bold">
+                          {(u as { avatar?: string }).avatar ? (
+                            <img
+                              src={pb.files.getURL(u, (u as { avatar?: string }).avatar!, {
+                                thumb: '100x100',
+                              })}
+                              alt=""
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            (u.name || u.email || '?').slice(0, 1).toUpperCase()
+                          )}
+                        </div>
+                        <div>
+                          <div className="font-medium text-slate-800">{u.name || '—'}</div>
+                          <div className="text-xs text-slate-500">{u.email}</div>
+                          <button
+                            type="button"
+                            onClick={() => setDiscPara(u)}
+                            title="Alterar disciplinas"
+                            className="mt-0.5 inline-flex items-center gap-1 text-xs text-[#1E3A8A] hover:underline"
+                          >
+                            {(u as { disciplinas?: string[] }).disciplinas?.length
+                              ? (u as { disciplinas?: string[] }).disciplinas!.join(' · ')
+                              : 'Sem disciplina'}
+                            <Pencil className="w-3 h-3 opacity-60" />
+                          </button>
+                        </div>
+                      </div>
                     </td>
                     <td className="px-4 py-3 min-w-[170px]">
                       <Select
