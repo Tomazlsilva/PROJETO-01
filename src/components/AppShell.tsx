@@ -21,7 +21,10 @@ import {
   Menu,
   PanelLeftClose,
   PanelLeftOpen,
+  Moon,
+  Sun,
 } from 'lucide-react'
+import { salvarTema, temaSalvo, type Tema } from '@/lib/tema'
 import { TimerTopo } from '@/components/TimerTopo'
 import { Button } from '@/components/ui/button'
 import { CmxLogo } from '@/components/CmxLogo'
@@ -75,6 +78,12 @@ export default function AppShell({ roles, largo }: AppShellProps) {
   const location = useLocation()
   const [recolhido, setRecolhido] = useState(lerRecolhido)
   const [menuCelular, setMenuCelular] = useState(false)
+  const [tema, setTema] = useState<Tema>(temaSalvo)
+  const trocarTema = () => {
+    const t: Tema = tema === 'escuro' ? 'claro' : 'escuro'
+    setTema(t)
+    salvarTema(t)
+  }
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) navigate('/', { replace: true })
@@ -252,6 +261,16 @@ export default function AppShell({ roles, largo }: AppShellProps) {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={trocarTema}
+              title={tema === 'escuro' ? 'Usar modo claro' : 'Usar modo escuro'}
+              aria-label={tema === 'escuro' ? 'Usar modo claro' : 'Usar modo escuro'}
+              className="text-slate-500 hover:text-slate-900"
+            >
+              {tema === 'escuro' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </Button>
             <TimerTopo />
             <Notificacoes />
             <div className="hidden sm:block text-right">
