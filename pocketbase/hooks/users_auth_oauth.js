@@ -1,7 +1,7 @@
 // Login pela conta Microsoft (ou outro provedor OAuth configurado no Skip).
 // Mesmas regras do login por senha: só entra quem o administrador cadastrou
 // (nunca cria conta sozinho), conta ativa e não bloqueada, sessão de 20h, auditoria e
-// foto do perfil puxada da Microsoft a cada login.
+// foto do perfil puxada da Microsoft a cada login (limite absoluto, não renova).
 
 onRecordAuthWithOAuth2Request((e) => {
   const audit = (action, outcome, targetId, details) => {
