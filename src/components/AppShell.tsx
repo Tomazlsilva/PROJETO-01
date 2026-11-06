@@ -201,18 +201,22 @@ export default function AppShell({ roles, largo }: AppShellProps) {
             Ajuda
           </div>
         )}
-        <a
-          href="/manual-central-gavazzi.pdf"
-          target="_blank"
-          rel="noopener noreferrer"
-          title={compacto ? 'Manual' : undefined}
-          className={`flex items-center gap-2.5 rounded-md text-sm font-medium transition-colors text-slate-600 hover:text-slate-900 hover:bg-slate-100 ${
-            compacto ? 'justify-center px-2 py-2' : 'px-3 py-2'
-          }`}
+        <NavLink
+          to="/manual"
+          title={compacto ? 'Manual do usuário' : undefined}
+          className={({ isActive }) =>
+            `flex items-center gap-2.5 rounded-md text-sm font-medium transition-colors ${
+              compacto ? 'justify-center px-2 py-2' : 'px-3 py-2'
+            } ${
+              isActive
+                ? 'bg-blue-50 text-[#1E3A8A]'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`
+          }
         >
           <BookOpen className="w-4 h-4 shrink-0" />
-          {!compacto && <span className="truncate">Manual</span>}
-        </a>
+          {!compacto && <span className="truncate">Manual do usuário</span>}
+        </NavLink>
       </div>
     </nav>
   )

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Mail, Lock, Eye, EyeOff, Loader2, AlertCircle, ArrowRight } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff, Loader2, AlertCircle, ArrowRight, BookOpen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -9,6 +9,7 @@ import { useAuth, SESSION_ENDED_KEY } from '@/contexts/AuthContext'
 import { CmxLogo } from '@/components/CmxLogo'
 import { LOGO_GAVAZZI } from '@/assets/marcaGavazzi'
 import { ForgotPasswordModal } from '@/components/ForgotPasswordModal'
+import { MANUAL_PDF_URL } from '@/assets/manual'
 
 const REMEMBER_EMAIL_KEY = 'cmx_remember_email'
 
@@ -443,12 +444,23 @@ export default function Index() {
             </div>
           </form>
 
-          {/* Rodapé do formulário: Acesso restrito */}
-          <div className="mt-8 pt-5 border-t border-slate-100 text-center">
+          {/* Rodapé do formulário: Acesso restrito e link do Manual do usuário */}
+          <div className="mt-8 pt-5 border-t border-slate-100 flex flex-col items-center gap-3">
             <p className="text-xs text-[#64748B] flex items-center justify-center gap-1.5 font-medium">
               <span className="w-1.5 h-1.5 rounded-full bg-slate-400 inline-block" />
               Acesso restrito — Somente usuários autorizados.
             </p>
+
+            <a
+              href={MANUAL_PDF_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-[#1E3A8A] transition-colors py-1 px-2.5 rounded-md hover:bg-slate-50 border border-transparent hover:border-slate-200"
+              title="Abrir o manual do usuário em nova aba (PDF com 41 páginas)"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-slate-400" />
+              <span>Manual do usuário</span>
+            </a>
           </div>
         </div>
       </div>

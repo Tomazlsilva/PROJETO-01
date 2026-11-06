@@ -7,6 +7,7 @@ import Index from './pages/Index'
 import Dashboard from './pages/Dashboard'
 import NotFound from './pages/NotFound'
 import ResetPassword from './pages/ResetPassword'
+import Manual from './pages/Manual'
 import ProjetoDetalhe from './pages/ProjetoDetalhe'
 import ProjetoNovo from './pages/ProjetoNovo'
 import Usuarios from './pages/admin/Usuarios'
@@ -39,6 +40,7 @@ const App = () => (
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route element={<AppShell />}>
             <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/manual" element={<Manual />} />
             <Route path="/projetos/novo" element={<ProjetoNovo />} />
             <Route path="/projetos/:id" element={<ProjetoDetalhe />} />
             <Route path="/fila" element={<Fila />} />
