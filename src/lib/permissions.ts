@@ -38,7 +38,7 @@ export const ROLE_PERMISSIONS: Record<Role, string[]> = {
 // SPEC-1-008 — Diretor: mesmo poder do Administrador (papel 'admin'), tipo de conta diferente.
 export type Papel = Role | 'diretor'
 
-export const PAPEIS: Papel[] = ['admin', 'diretor', 'coordenador', 'projetista']
+export const PAPEIS: Papel[] = ['admin', 'diretor', 'coordenador', 'administrativo', 'projetista']
 
 export const PAPEL_LABEL: Record<Papel, string> = { ...ROLE_LABEL, diretor: 'Diretor' }
 
