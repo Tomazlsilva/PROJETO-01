@@ -203,8 +203,20 @@
   background-color: rgba(147, 51, 234, 0.16);
 }
 
-.dark .text-slate-900 {
+.dark .text-slate-900,
+.dark .text-\[\#1E293B\],
+.dark .text-\[\#0F172A\] {
   color: #f1f5f9;
+}
+.dark .text-\[\#284480\] {
+  color: #9fb8f5;
+}
+.dark .text-\[\#64748B\] {
+  color: #a3b0c2;
+}
+/* o logo da marca fica sempre sobre fundo branco */
+.dark .logo-claro {
+  background-color: #ffffff;
 }
 .dark .text-slate-800 {
   color: #e2e8f0;

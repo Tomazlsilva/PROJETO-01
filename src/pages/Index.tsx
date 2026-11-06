@@ -210,7 +210,7 @@ export default function Index() {
 
         {/* Centro: só o logo, em cartão branco, e a identificação do sistema */}
         <div className="relative z-10 flex-1 flex flex-col items-center justify-center gap-7">
-          <div className="bg-white rounded-[28px] px-10 py-8 shadow-[0_20px_50px_rgba(0,0,0,0.35)] ring-1 ring-white/30">
+          <div className="logo-claro bg-white rounded-[28px] px-10 py-8 shadow-[0_20px_50px_rgba(0,0,0,0.35)] ring-1 ring-white/30">
             <img
               src={LOGO_GAVAZZI}
               alt="Gavazzi Engenharia"
