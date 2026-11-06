@@ -45,11 +45,42 @@ routerAdd(
           } catch (_) {}
         }
         if (!cardId && cardsDaEntrega.length > 0) cardId = cardsDaEntrega[0]
+        // Entrega sem disciplina ligada (ex.: importada do Planner): usa uma disciplina do
+        // projeto — a que a pessoa é responsável, senão a da área dela, senão a primeira.
+        if (!cardId) {
+          const cardsProj = $app.findRecordsByFilter(
+            'projeto_disciplinas',
+            'projeto = {:p}',
+            'created',
+            0,
+            0,
+            { p: entregaRec.getString('projeto') },
+          )
+          const meu = cardsProj.find((c) => c.getString('responsavel') === auth.id)
+          let daArea = null
+          if (!meu) {
+            const minhas = auth.getStringSlice('disciplinas').map((x) => x.toLowerCase())
+            daArea =
+              cardsProj.find((c) => {
+                try {
+                  const n = $app
+                    .findRecordById('disciplinas', c.getString('disciplina'))
+                    .getString('nome')
+                    .toLowerCase()
+                  return minhas.some((m) => n.indexOf(m.slice(0, 5)) >= 0)
+                } catch (_) {
+                  return false
+                }
+              }) || null
+          }
+          const escolhido = meu || daArea || cardsProj[0] || null
+          if (escolhido) cardId = escolhido.id
+        }
         if (!cardId)
           throw new BadRequestError('Revise os campos destacados.', {
             entrega: new ValidationError(
               'sem_disciplina',
-              'Esta entrega não tem disciplina ligada. Peça ao coordenador para ligar uma.',
+              'Este projeto ainda não tem disciplina cadastrada. Peça ao coordenador para incluir.',
             ),
           })
       } else if (cardsDaEntrega.length > 0 && cardsDaEntrega.indexOf(cardId) < 0) {
