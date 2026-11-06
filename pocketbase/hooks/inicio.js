@@ -1,9 +1,9 @@
 // Tela Início: projetos com coordenador, disciplinas e próxima entrega, mais as entregas
 // da semana e as atrasadas.
 //   GET /backend/v1/inicio?arquivados=1
-// Projetos: os mesmos que a pessoa já pode abrir (admin/administrativo: todos; demais:
-// os que coordena ou em que está). "Esta semana": admin/administrativo veem tudo; os
-// demais, as entregas dos próprios projetos.
+// Projetos: os mesmos que a pessoa já pode abrir (admin, administrativo e coordenador:
+// todos; projetista: os projetos em que está). "Esta semana": admin e administrativo
+// veem tudo; coordenador e projetista, as entregas dos próprios projetos.
 routerAdd(
   'GET',
   '/backend/v1/inicio',
@@ -19,7 +19,7 @@ routerAdd(
       throw new UnauthorizedError('Sessão inválida ou expirada.')
     }
     const papel = auth.getString('role')
-    const veTodos = papel === 'admin' || papel === 'administrativo'
+    const veTodos = papel === 'admin' || papel === 'administrativo' || papel === 'coordenador'
     const arquivados = String(e.request.url.query().get('arquivados') || '') === '1'
     const somaDias = (d, n) =>
       new Date(new Date(d + 'T12:00:00Z').getTime() + n * 86400000).toISOString().slice(0, 10)
@@ -96,7 +96,7 @@ routerAdd(
         if (data < hoje) atrasadasDe[pid] = (atrasadasDe[pid] || 0) + 1
         else if (!proxima[pid]) proxima[pid] = item
       }
-      const entraNoQuadro = veTodos || (vis && vis.meu)
+      const entraNoQuadro = papel === 'admin' || papel === 'administrativo' || (vis && vis.meu)
       if (!entraNoQuadro) continue
       let nomeProj = vis ? vis.p.getString('nome') : ''
       if (!nomeProj) {
