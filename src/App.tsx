@@ -23,6 +23,7 @@ import Painel from './pages/Painel'
 import Mudancas from './pages/Mudancas'
 import Backups from './pages/admin/Backups'
 import ImportarPlanner from './pages/admin/ImportarPlanner'
+import Checklists from './pages/admin/Checklists'
 import Layout from './components/Layout'
 import AppShell from './components/AppShell'
 
@@ -51,6 +52,7 @@ const App = () => (
           </Route>
           <Route element={<AppShell roles={['admin', 'coordenador']} />}>
             <Route path="/falhas" element={<Falhas />} />
+            <Route path="/admin/checklists" element={<Checklists />} />
           </Route>
           <Route element={<AppShell roles={['admin', 'coordenador', 'administrativo']} />}>
             <Route path="/mudancas" element={<Mudancas />} />

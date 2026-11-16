@@ -24,6 +24,7 @@ import {
   Moon,
   Sun,
   BookOpen,
+  ClipboardList,
 } from 'lucide-react'
 import { salvarTema, temaSalvo, type Tema } from '@/lib/tema'
 import { TimerTopo } from '@/components/TimerTopo'
@@ -140,10 +141,20 @@ export default function AppShell({ roles, largo }: AppShellProps) {
             itens: [
               { to: '/admin/usuarios', rotulo: 'Equipe', icone: Users },
               { to: '/admin/fluxo', rotulo: 'Etapas do projeto', icone: Workflow },
+              { to: '/admin/checklists', rotulo: 'Checklists', icone: ClipboardList },
               { to: '/admin/auditoria', rotulo: 'Acessos e ações', icone: ScrollText },
               { to: '/admin/backups', rotulo: 'Cópias de segurança', icone: DatabaseBackup },
               { to: '/admin/importar-planner', rotulo: 'Importar do Planner', icone: FileUp },
             ],
+          },
+        ]
+      : []),
+    // SPEC-2-001: coordenadores também mantêm os checklists
+    ...(!isAdmin && role === 'coordenador'
+      ? [
+          {
+            titulo: 'Administração',
+            itens: [{ to: '/admin/checklists', rotulo: 'Checklists', icone: ClipboardList }],
           },
         ]
       : []),
