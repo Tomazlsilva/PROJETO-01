@@ -22,6 +22,33 @@ cronAdd('zz_teste_chk', '* * * * *', () => {
       return { s: 0, j: { erro: String(err) } }
     }
   }
+  // restos de execuções anteriores entram na mesma limpeza do fim
+  try {
+    const restos = []
+    for (const u of $app.findRecordsByFilter('users', "email ~ 'zz.teste.'", '', 0, 0)) {
+      ids.users.push(u.id)
+      restos.push('user ' + u.id)
+    }
+    for (const d of $app.findRecordsByFilter('disciplinas', "nome ~ 'ZZ Teste'", '', 0, 0)) {
+      ids.disc.push(d.id)
+      restos.push('disc ' + d.id)
+      for (const m of $app.findRecordsByFilter('checklist_modelos', 'disciplina = {:d}', '', 0, 0, {
+        d: d.id,
+      }))
+        ids.modelos.push(m.id)
+    }
+    for (const p of $app.findRecordsByFilter('projetos', "nome ~ 'ZZ Teste'", '', 0, 0)) {
+      ids.projetos.push(p.id)
+      restos.push('projeto ' + p.id)
+      for (const c of $app.findRecordsByFilter('projeto_disciplinas', 'projeto = {:p}', '', 0, 0, {
+        p: p.id,
+      }))
+        ids.cards.push(c.id)
+    }
+    if (restos.length) R.push('restos encontrados: ' + restos.join(', '))
+  } catch (err) {
+    R.push('ERRO restos ' + String(err))
+  }
   try {
     const sfx = $security.randomStringWithAlphabet(6, 'abcdefghijkmnpqrstuvwxyz23456789')
     const users = $app.findCollectionByNameOrId('users')
@@ -525,6 +552,148 @@ cronAdd('zz_teste_chk', '* * * * *', () => {
       '2-003 sem checklist: rodada marcada "sem checklist"',
       (r.j.rodadas || []).length === 1 && r.j.rodadas[0].sem_checklist === true,
     )
+
+    // ---- SPEC-2-004 ----
+    const hoje = new Date(Date.now() - 3 * 3600000).toISOString().slice(0, 10)
+    const emitir = (tok, dados) =>
+      req(tok, 'POST', '/backend/v1/cards/' + C.id + '/emissoes', dados)
+    const base4 = {
+      rotulo: 'R00',
+      data: hoje,
+      destinatario: 'Construtora teste',
+      responsavel: coord.id,
+    }
+    r = emitir(tC, Object.assign({ tipo: 'final' }, base4))
+    ok(
+      '2-004 emitir sem revisão aprovada → 409',
+      r.s === 409 && r.j.code === 'sem_aprovacao',
+      'status ' + r.s,
+    )
+    r = req(tC, 'GET', '/backend/v1/cards/' + C.id + '/revisao')
+    const rab = r.j.rodadas[0]
+    r = req(tC, 'POST', '/backend/v1/cards/' + C.id + '/mover', {
+      para: 'aprovado',
+      versao: verCard(),
+      revisao: { rodada: rab.id, versao: rab.versao },
+    })
+    ok('2-004 aprova a revisão reaberta', r.s === 200, 'status ' + r.s + ' ' + (r.j.message || ''))
+    const E1 = new Record($app.findCollectionByNameOrId('entregas'))
+    E1.set('projeto', pr.id)
+    E1.set('tipo', 'final')
+    E1.set('data', hoje + ' 12:00:00.000Z')
+    E1.set('disciplinas', [C.id])
+    E1.set('origem', 'central')
+    $app.save(E1)
+    r = emitir(tP, Object.assign({ entrega: E1.id }, base4))
+    ok('2-004 projetista não emite (403)', r.s === 403, 'status ' + r.s)
+    r = emitir(tC, Object.assign({ entrega: E1.id }, base4))
+    ok(
+      '2-004 emissão R00 ligada à entrega',
+      r.s === 201 && r.j.entregue === true,
+      'status ' + r.s + ' ' + JSON.stringify(r.j).slice(0, 160),
+    )
+    const EM1 = r.j.id
+    ok(
+      '2-004 entrega marcada como entregue',
+      $app.findRecordById('entregas', E1.id).getBool('entregue'),
+    )
+    r = emitir(tC, Object.assign({ entrega: E1.id }, base4))
+    ok('2-004 segunda emissão na mesma entrega → 409', r.s === 409, 'status ' + r.s)
+    r = emitir(tC, Object.assign({}, base4, { rotulo: 'R01', tipo: 'revisao' }))
+    ok(
+      '2-004 sem entrega no calendário: cria a entrega',
+      r.s === 201 && r.j.entrega_criada === true,
+      'status ' + r.s,
+    )
+    const EM2 = r.j.id
+    r = req(tC, 'GET', '/backend/v1/cards/' + C.id + '/emissoes')
+    const em2 = (r.j.emissoes || []).find((x) => x.id === EM2)
+    r = req(tC, 'POST', '/backend/v1/cards/' + C.id + '/emissoes/' + EM2 + '/cancelar', {
+      versao: em2.versao,
+    })
+    ok('2-004 cancelar sem justificativa → 400', r.s === 400, 'status ' + r.s)
+    r = req(tC, 'POST', '/backend/v1/cards/' + C.id + '/emissoes/' + EM2 + '/cancelar', {
+      versao: em2.versao,
+      justificativa: 'Registrada por engano',
+    })
+    ok('2-004 cancelar com justificativa', r.s === 200, 'status ' + r.s)
+    r = req(tC, 'GET', '/backend/v1/cards/' + C.id + '/emissoes')
+    ok(
+      '2-004 emissão cancelada continua no histórico',
+      (r.j.emissoes || []).length === 2 &&
+        (r.j.emissoes || []).find((x) => x.id === EM2).status === 'cancelada',
+    )
+    const corr = (tok, dados) =>
+      req(tok, 'POST', '/backend/v1/cards/' + C.id + '/emissoes/' + EM1 + '/correcao', dados)
+    r = corr(tP, {
+      origem: 'obra',
+      severidade: 'media',
+      descricao: 'Registro fora da altura',
+      decisao: 'valida',
+    })
+    ok('2-004 projetista não registra correção (403)', r.s === 403, 'status ' + r.s)
+    r = corr(tC, {
+      origem: 'cliente',
+      severidade: 'baixa',
+      descricao: 'Trocar fabricante',
+      decisao: 'invalida',
+    })
+    ok('2-004 inválida sem justificativa → 400', r.s === 400, 'status ' + r.s)
+    r = corr(tC, {
+      origem: 'cliente',
+      severidade: 'baixa',
+      descricao: 'Trocar fabricante',
+      decisao: 'invalida',
+      justificativa: 'Mudança de escopo',
+    })
+    ok(
+      '2-004 correção inválida: sem atividade, card segue aprovado',
+      r.s === 201 && !r.j.atividade && !r.j.card_em_correcao,
+      'status ' + r.s,
+    )
+    r = corr(tC, {
+      origem: 'obra',
+      severidade: 'media',
+      descricao: 'Registro fora da altura',
+      item: 'rv2',
+      decisao: 'valida',
+    })
+    ok(
+      '2-004 correção válida cria atividade e volta para correção',
+      r.s === 201 && !!r.j.atividade && r.j.card_em_correcao === true,
+      'status ' + r.s,
+    )
+    const CV = r.j.id
+    ok(
+      '2-004 card em "Em correção"',
+      $app.findRecordById('projeto_disciplinas', C.id).getString('etapa') === 'em_correcao',
+    )
+    r = req(tP, 'GET', '/backend/v1/fila')
+    const fq = (r.j.itens || []).find((i) => i.id === C.id)
+    ok(
+      '2-004 atividade de correção na fila do responsável',
+      !!fq && !!fq.atividade && (fq.atividade.motivo_ajuste || '').indexOf('R00') >= 0,
+    )
+    r = emitir(tC, Object.assign({}, base4, { rotulo: 'R02', tipo: 'revisao' }))
+    ok('2-004 emitir com card em correção → 409', r.s === 409, 'status ' + r.s)
+    r = req(tC, 'GET', '/backend/v1/cards/' + C.id + '/emissoes')
+    const cv = (r.j.correcoes || []).find((x) => x.id === CV)
+    r = req(tC, 'POST', '/backend/v1/cards/' + C.id + '/correcoes/' + CV + '/decisao', {
+      versao: cv.versao,
+      decisao: 'invalida',
+      justificativa: 'Era previsto no projeto',
+    })
+    ok('2-004 rever decisão para inválida', r.s === 200, 'status ' + r.s)
+    r = req(tC, 'GET', '/backend/v1/cards/' + C.id + '/emissoes')
+    const cv2 = (r.j.correcoes || []).find((x) => x.id === CV)
+    ok(
+      '2-004 atividade cancelada e histórico da decisão',
+      !!cv2 &&
+        cv2.decisao === 'invalida' &&
+        cv2.historico.length === 1 &&
+        cv2.atividade &&
+        cv2.atividade.status === 'cancelada',
+    )
   } catch (err) {
     R.push('ERRO ' + String(err))
   }
@@ -546,6 +715,8 @@ cronAdd('zz_teste_chk', '* * * * *', () => {
     }
     if (C) {
       for (const t of [
+        'correcoes_pos_emissao',
+        'emissoes',
         'revisao_rodadas',
         'checklist_eventos',
         'checklist_pendencias',

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-16T13:12:59.650Z",
+  "generatedAt": "2026-11-16T13:19:49.083Z",
   "collections": [
     {
       "name": "users",
@@ -3038,6 +3038,302 @@
         "CREATE UNIQUE INDEX idx_rev_rodada_num ON revisao_rodadas (card, numero)",
         "CREATE INDEX idx_rev_rodada_proj ON revisao_rodadas (projeto, created)",
         "CREATE UNIQUE INDEX idx_rev_rodada_aberta ON revisao_rodadas (card) WHERE status = 'aberta'"
+      ]
+    },
+    {
+      "name": "emissoes",
+      "type": "base",
+      "apiRules": {
+        "list": null,
+        "view": null,
+        "create": null,
+        "update": null,
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "card",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "projeto_disciplinas"
+        },
+        {
+          "name": "projeto",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "projetos"
+        },
+        {
+          "name": "rodada",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "revisao_rodadas"
+        },
+        {
+          "name": "entrega",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "entregas"
+        },
+        {
+          "name": "tipo",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": [
+            "previa",
+            "final",
+            "revisao",
+            "outro"
+          ]
+        },
+        {
+          "name": "rotulo",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "numero_revisao",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "data",
+          "type": "date",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "destinatario",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "responsavel",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": [
+            "emitida",
+            "cancelada"
+          ]
+        },
+        {
+          "name": "entrega_criada",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "cancelamento",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "cancelada_por",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "cancelada_em",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "autor",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate"
+          ]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_emissoes_card ON emissoes (card, created)",
+        "CREATE INDEX idx_emissoes_proj ON emissoes (projeto, data)",
+        "CREATE INDEX idx_emissoes_entrega ON emissoes (entrega)"
+      ]
+    },
+    {
+      "name": "correcoes_pos_emissao",
+      "type": "base",
+      "apiRules": {
+        "list": null,
+        "view": null,
+        "create": null,
+        "update": null,
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "emissao",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "emissoes"
+        },
+        {
+          "name": "card",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "projeto_disciplinas"
+        },
+        {
+          "name": "projeto",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "projetos"
+        },
+        {
+          "name": "origem",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": [
+            "cliente",
+            "obra",
+            "interna"
+          ]
+        },
+        {
+          "name": "severidade",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": [
+            "alta",
+            "media",
+            "baixa"
+          ]
+        },
+        {
+          "name": "descricao",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "item_id",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "item_texto",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "decisao",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": [
+            "valida",
+            "invalida"
+          ]
+        },
+        {
+          "name": "justificativa",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "decidido_por",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "decidido_em",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "atividade",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "historico",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "autor",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate"
+          ]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_correcoes_card ON correcoes_pos_emissao (card, created)",
+        "CREATE INDEX idx_correcoes_proj ON correcoes_pos_emissao (projeto, created)",
+        "CREATE INDEX idx_correcoes_emissao ON correcoes_pos_emissao (emissao)"
       ]
     }
   ]

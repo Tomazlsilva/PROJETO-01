@@ -20,6 +20,7 @@ import { cancelarAtividade, devolverAtividade, receberAtividade } from '@/servic
 import { TempoDoCard } from '@/components/TempoDoCard'
 import { ChecklistDoCard } from '@/components/ChecklistDoCard'
 import { RevisaoDoCard } from '@/components/RevisaoDoCard'
+import { EmissoesDoCard } from '@/components/EmissoesDoCard'
 import { toast } from 'sonner'
 import { ClientResponseError } from 'pocketbase'
 import { Button } from '@/components/ui/button'
@@ -1051,6 +1052,17 @@ function CardDialog({
                 }}
               />
             )}
+
+            <EmissoesDoCard
+              cardId={d.id}
+              etapa={d.etapa}
+              equipe={d.equipe}
+              userId={userId}
+              onAlterado={async () => {
+                await carregar()
+                await onAlterado()
+              }}
+            />
 
             <ChecklistDoCard
               cardId={d.id}
