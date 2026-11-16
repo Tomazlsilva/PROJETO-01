@@ -4,11 +4,11 @@ import { LOGO_GAVAZZI } from '@/assets/marcaGavazzi'
 // Marca da Central Gavazzi. Mantém o nome/props do componente antigo (CmxLogo)
 // para não mexer em quem o usa.
 // - variant "dark": sobre fundo escuro, o logo vai num cartão branco.
-// - variant "light": sobre fundo claro, logo + "Central Gavazzi". No modo escuro usa a
-//   versão branca do logo, com fundo transparente, gerada a partir da própria arte.
+// - variant "light": sobre fundo claro, logo + "Central Gavazzi". No modo escuro usa o
+//   logo sem o fundo branco (transparente), mantendo as cores originais da Gavazzi.
 
-// Versão branca: cada pixel vira branco com opacidade proporcional ao quanto ele é escuro
-// na arte original (fundo branco → transparente; azul e cinza → branco quase sólido).
+// Tira o fundo branco sem mudar as cores: cada pixel é tratado como "cor sobre branco" e
+// recebe a opacidade mínima que reproduz a cor original (borda suave, sem halo branco).
 let brancoCache: string | null = null
 let brancoPromessa: Promise<string> | null = null
 
@@ -28,14 +28,17 @@ function gerarLogoBranco(): Promise<string> {
         const dados = ctx.getImageData(0, 0, c.width, c.height)
         const p = dados.data
         for (let i = 0; i < p.length; i += 4) {
-          const lum = 0.299 * p[i] + 0.587 * p[i + 1] + 0.114 * p[i + 2]
-          // 0 no fundo branco; o cinza do "GAVAZZI" e o azul do símbolo ficam bem visíveis
-          let a = (245 - lum) / 245
-          a = a <= 0.04 ? 0 : Math.min(1, a * 1.9)
-          p[i] = 255
-          p[i + 1] = 255
-          p[i + 2] = 255
-          p[i + 3] = Math.round(a * (p[i + 3] / 255) * 255)
+          const r = p[i]
+          const g = p[i + 1]
+          const b = p[i + 2]
+          let a = Math.max(255 - r, 255 - g, 255 - b) / 255
+          if (a < 0.03) a = 0
+          if (a > 0) {
+            p[i] = Math.round((r - 255 * (1 - a)) / a)
+            p[i + 1] = Math.round((g - 255 * (1 - a)) / a)
+            p[i + 2] = Math.round((b - 255 * (1 - a)) / a)
+          }
+          p[i + 3] = Math.round(a * p[i + 3])
         }
         ctx.putImageData(dados, 0, 0)
         brancoCache = c.toDataURL('image/png')
