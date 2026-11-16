@@ -19,6 +19,7 @@ import {
 import { cancelarAtividade, devolverAtividade, receberAtividade } from '@/services/handoffs'
 import { TempoDoCard } from '@/components/TempoDoCard'
 import { ChecklistDoCard } from '@/components/ChecklistDoCard'
+import { RevisaoDoCard } from '@/components/RevisaoDoCard'
 import { toast } from 'sonner'
 import { ClientResponseError } from 'pocketbase'
 import { Button } from '@/components/ui/button'
@@ -661,6 +662,8 @@ function CardDialog({
           .filter(
             (x): x is { para: Etapa; classe: Classe } => !!x.classe && podeMover(x.classe, ctx),
           )
+          // SPEC-2-003: aprovar/devolver é feito pelo bloco "Revisão do coordenador"
+          .filter((x) => !(d.etapa === 'aguardando_revisao' && x.classe === 'rev'))
       : []
   const podeDesbloquear =
     !!d &&
@@ -1039,11 +1042,24 @@ function CardDialog({
                 </div>
               )}
 
+            {!d.bloqueado && (
+              <RevisaoDoCard
+                card={{ id: d.id, etapa: d.etapa, versao: d.versao }}
+                onAlterado={async () => {
+                  await carregar()
+                  await onAlterado()
+                }}
+              />
+            )}
+
             <ChecklistDoCard
               cardId={d.id}
               equipe={d.equipe}
               coordenadorId={d.projeto.coordenador?.id ?? ''}
-              onAlterado={onAlterado}
+              onAlterado={async () => {
+                await carregar()
+                await onAlterado()
+              }}
             />
 
             <TempoDoCard

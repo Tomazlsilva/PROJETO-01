@@ -172,6 +172,8 @@ export const moverCard = (
   versao: string,
   justificativa?: string,
   campos?: Partial<Record<CampoEtapa, string>>,
+  // SPEC-2-003: rodada de revisão que está sendo encerrada (aprovar/devolver)
+  revisao?: { rodada: string; versao: string },
 ) =>
   pb.send<{ id: string; etapa: Etapa; versao: string }>(
     `/backend/v1/cards/${encodeURIComponent(id)}/mover`,
@@ -182,6 +184,7 @@ export const moverCard = (
         versao,
         justificativa: justificativa || '',
         campos: campos || {},
+        revisao: revisao || undefined,
         // repetir a mesma requisição (ex.: rede instável) não duplica a transição
         idempotencia: crypto.randomUUID(),
       },

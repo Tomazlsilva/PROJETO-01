@@ -296,6 +296,135 @@ routerAdd(
       }
     }
 
+    // SPEC-2-003: aprovar ou devolver encerra a rodada de revisão (na mesma transação)
+    let revInfo = null
+    const erroRev = (campo, msg) => {
+      const d = {}
+      d[campo] = new ValidationError('revisao', msg)
+      throw new BadRequestError(msg, d)
+    }
+    if (de === 'aguardando_revisao' && (para === 'em_correcao' || para === 'aprovado')) {
+      const apr = $app.findRecordsByFilter(
+        'checklists_aplicados',
+        "card = {:c} && tipo = 'revisao'",
+        '',
+        1,
+        0,
+        {
+          c: id,
+        },
+      )
+      if (apr.length > 0) {
+        const abertas = $app.findRecordsByFilter(
+          'revisao_rodadas',
+          "card = {:c} && status = 'aberta'",
+          '',
+          1,
+          0,
+          {
+            c: id,
+          },
+        )
+        if (abertas.length === 0)
+          return conflito(
+            'revisao_nao_iniciada',
+            'Abra a revisão no card e marque os itens do checklist antes de aprovar ou devolver.',
+          )
+        const rd = abertas[0]
+        const rv = body.revisao && typeof body.revisao === 'object' ? body.revisao : {}
+        if (rv.rodada !== rd.id || rv.versao !== rd.getString('updated'))
+          return conflito(
+            'conflito_edicao',
+            'A rodada de revisão mudou depois que você abriu. Atualize o card e confira os itens.',
+          )
+        const marc = JSON.parse(rd.getString('itens') || '{}') || {}
+        const itensRev = JSON.parse(apr[0].getString('itens') || '[]')
+        const faltam = itensRev.filter((it) => !marc[it.id] || !marc[it.id].resultado)
+        if (faltam.length > 0)
+          erroRev(
+            'revisao',
+            (faltam.length === 1
+              ? 'Falta marcar 1 item'
+              : 'Faltam marcar ' + faltam.length + ' itens') +
+              ' da revisão: ' +
+              faltam
+                .slice(0, 3)
+                .map((x) => '"' + x.texto + '"')
+                .join(', ') +
+              (faltam.length > 3 ? '…' : '') +
+              '.',
+          )
+        const nc = itensRev.filter((it) => marc[it.id].resultado === 'nao_conforme')
+        const exc = itensRev.filter((it) => marc[it.id].resultado === 'excecao')
+        if (para === 'aprovado' && nc.length > 0)
+          erroRev(
+            'revisao',
+            'Há ' +
+              nc.length +
+              ' item(ns) não conforme(s): devolva para correção ou registre exceção técnica.',
+          )
+        if (para === 'em_correcao' && nc.length === 0)
+          erroRev('revisao', 'Nenhum item está não conforme: não há o que devolver para correção.')
+        revInfo = {
+          id: rd.id,
+          versao: rd.getString('updated'),
+          numero: rd.getInt('numero'),
+          resultado:
+            para === 'aprovado'
+              ? exc.length > 0
+                ? 'aprovado_com_excecao'
+                : 'aprovado'
+              : 'reprovado',
+          nao_conformes: nc.length,
+          excecoes: exc.length,
+        }
+      } else {
+        // sem checklist de revisão: a rodada registra só o resultado geral e o motivo (fora do K2)
+        if (para === 'em_correcao' && justificativa.length < 3)
+          erroRev('justificativa', 'Diga o que precisa ser corrigido.')
+        revInfo = {
+          id: '',
+          resultado: para === 'aprovado' ? 'aprovado' : 'reprovado',
+          nao_conformes: 0,
+          excecoes: 0,
+        }
+      }
+    }
+    // SPEC-2-003 (CA-2-003-04): reenviar exige marcar os itens corrigidos da rodada reprovada
+    if (de === 'em_correcao' && para === 'aguardando_revisao') {
+      const ult = $app.findRecordsByFilter('revisao_rodadas', 'card = {:c}', '-numero', 1, 0, {
+        c: id,
+      })
+      if (
+        ult.length > 0 &&
+        ult[0].getString('resultado') === 'reprovado' &&
+        !ult[0].getBool('sem_checklist')
+      ) {
+        const marc = JSON.parse(ult[0].getString('itens') || '{}') || {}
+        const ap2 = ult[0].getString('aplicado')
+          ? JSON.parse(
+              $app
+                .findRecordById('checklists_aplicados', ult[0].getString('aplicado'))
+                .getString('itens') || '[]',
+            )
+          : []
+        const pend = ap2.filter(
+          (it) => marc[it.id] && marc[it.id].resultado === 'nao_conforme' && !marc[it.id].corrigido,
+        )
+        if (pend.length > 0)
+          erroRev(
+            'revisao',
+            'Marque o que foi corrigido antes de reenviar: ' +
+              pend
+                .slice(0, 3)
+                .map((x) => '"' + x.texto + '"')
+                .join(', ') +
+              (pend.length > 3 ? '…' : '') +
+              '.',
+          )
+      }
+    }
+
     let situacao = 'ok'
     let versao = ''
     let handoff = null
@@ -314,6 +443,30 @@ routerAdd(
         situacao = 'bloqueado'
         return
       }
+      let rodadaRec = null
+      if (revInfo && revInfo.id) {
+        rodadaRec = tx.findRecordById('revisao_rodadas', revInfo.id)
+        if (
+          rodadaRec.getString('status') !== 'aberta' ||
+          rodadaRec.getString('updated') !== revInfo.versao
+        ) {
+          situacao = 'conflito'
+          return
+        }
+      } else if (revInfo) {
+        const ultR = tx.findRecordsByFilter('revisao_rodadas', 'card = {:c}', '-numero', 1, 0, {
+          c: id,
+        })
+        rodadaRec = new Record(tx.findCollectionByNameOrId('revisao_rodadas'))
+        rodadaRec.set('card', id)
+        rodadaRec.set('projeto', c.getString('projeto'))
+        rodadaRec.set('numero', ultR.length > 0 ? ultR[0].getInt('numero') + 1 : 1)
+        rodadaRec.set('sem_checklist', true)
+        rodadaRec.set('itens', {})
+        rodadaRec.set('historico', [])
+        if (!su) rodadaRec.set('aberta_por', auth.id)
+        revInfo.numero = rodadaRec.getInt('numero')
+      }
       c.set('etapa', para)
       for (const f of Object.keys(novos)) c.set(f, novos[f])
       tx.save(c)
@@ -325,14 +478,33 @@ routerAdd(
       t.set('para', para)
       t.set('justificativa', justificativa)
       if (!su) t.set('autor', auth.id)
-      t.set('detalhes', {
+      const det = {
         classe: classe,
         configuracao: versoes.length > 0 ? versoes[0].getInt('numero') : 0,
         campos: Object.keys(novos),
-      })
+      }
+      if (revInfo)
+        det.revisao = {
+          rodada: revInfo.numero,
+          resultado: revInfo.resultado,
+          sem_checklist: !revInfo.id,
+          nao_conformes: revInfo.nao_conformes,
+          excecoes: revInfo.excecoes,
+        }
+      t.set('detalhes', det)
       if (idem) t.set('idempotencia', idem)
       tx.save(t)
       versao = c.getString('updated')
+      if (rodadaRec) {
+        rodadaRec.set('status', 'encerrada')
+        rodadaRec.set('resultado', revInfo.resultado)
+        rodadaRec.set('motivo', justificativa)
+        if (!su) rodadaRec.set('encerrada_por', auth.id)
+        rodadaRec.set('encerrada_em', new Date().toISOString())
+        if (revInfo.resultado === 'reprovado')
+          rodadaRec.set('responsavel_correcao', c.getString('responsavel'))
+        tx.save(rodadaRec)
+      }
 
       // ---- Handoff (SPEC-1-005): encerra pendências da etapa anterior e cria a do próximo responsável ----
       const agoraTxt = new Date().toISOString().replace('T', ' ')

@@ -334,6 +334,197 @@ cronAdd('zz_teste_chk', '* * * * *', () => {
       (r.j.eventos || []).length >= 5,
       String((r.j.eventos || []).length),
     )
+
+    // ---- SPEC-2-003 ----
+    r = req(tC, 'POST', '/backend/v1/checklists', { disciplina: D.id, tipo: 'revisao' })
+    const MR = r.j.id
+    ids.modelos.push(MR)
+    const itensR = [
+      {
+        id: 'rv1',
+        texto: 'Pressões mínimas conferidas',
+        grupo: '',
+        severidade: 'critico',
+        referencia: '',
+      },
+      { id: 'rv2', texto: 'Legenda no padrão', grupo: '', severidade: 'normal', referencia: '' },
+      {
+        id: 'rv3',
+        texto: 'Calhas com área de contribuição',
+        grupo: '',
+        severidade: 'normal',
+        referencia: '',
+      },
+    ]
+    r = req(tC, 'GET', '/backend/v1/checklists/' + MR)
+    r = req(tC, 'POST', '/backend/v1/checklists/' + MR + '/publicar', {
+      base: r.j.updated,
+      itens: itensR,
+    })
+    ok('2-003 checklist de revisão publicado', r.s === 200, 'status ' + r.s)
+    r = req(tP, 'POST', '/backend/v1/cards/' + C.id + '/mover', {
+      para: 'em_elaboracao',
+      versao: verCard(),
+    })
+    r = req(tP, 'POST', '/backend/v1/cards/' + C.id + '/mover', {
+      para: 'aguardando_revisao',
+      versao: verCard(),
+    })
+    ok(
+      '2-003 projetista envia para revisão',
+      r.s === 200,
+      'status ' + r.s + ' ' + (r.j.message || ''),
+    )
+    r = req(tC, 'GET', '/backend/v1/cards/' + C.id + '/revisao')
+    ok(
+      '2-003 checklist de revisão aplicado ao entrar na etapa',
+      r.s === 200 && !!r.j.checklist && r.j.checklist.itens.length === 3,
+    )
+    r = req(tC, 'POST', '/backend/v1/cards/' + C.id + '/mover', {
+      para: 'aprovado',
+      versao: verCard(),
+    })
+    ok(
+      '2-003 aprovar sem rodada aberta → 409',
+      r.s === 409 && r.j.code === 'revisao_nao_iniciada',
+      'status ' + r.s,
+    )
+    r = req(tP, 'POST', '/backend/v1/cards/' + C.id + '/revisao/abrir')
+    ok('2-003 projetista não abre rodada (403)', r.s === 403, 'status ' + r.s)
+    r = req(tC, 'POST', '/backend/v1/cards/' + C.id + '/revisao/abrir')
+    ok('2-003 coordenador abre rodada 1', r.s === 201 && r.j.numero === 1, 'status ' + r.s)
+    const R1 = r.j.id
+    let vr = r.j.versao
+    const marcarR = (tok, rid, item, resultado, extra) =>
+      req(
+        tok,
+        'POST',
+        '/backend/v1/cards/' + C.id + '/revisao/' + rid + '/marcar',
+        Object.assign({ versao: vr, item: item, resultado: resultado }, extra || {}),
+      )
+    r = marcarR(tP, R1, 'rv1', 'conforme')
+    ok('2-003 projetista não marca revisão (403)', r.s === 403, 'status ' + r.s)
+    r = marcarR(tC, R1, 'rv1', 'excecao')
+    ok('2-003 exceção sem justificativa → 400', r.s === 400, 'status ' + r.s)
+    r = marcarR(tC, R1, 'rv1', 'nao_conforme', { observacao: 'Pressão do 8º abaixo do mínimo' })
+    ok('2-003 marcar não conforme', r.s === 200, 'status ' + r.s)
+    vr = r.j.versao
+    r = marcarR(tC, R1, 'rv2', 'conforme')
+    vr = r.j.versao
+    const revMover = (para, just) =>
+      req(tC, 'POST', '/backend/v1/cards/' + C.id + '/mover', {
+        para: para,
+        versao: verCard(),
+        justificativa: just || '',
+        revisao: { rodada: R1, versao: vr },
+      })
+    r = revMover('aprovado')
+    ok('2-003 encerrar com item sem marcar → 400', r.s === 400, 'status ' + r.s)
+    r = marcarR(tC, R1, 'rv3', 'nao_se_aplica', { justificativa: 'Laje impermeabilizada' })
+    vr = r.j.versao
+    r = revMover('aprovado')
+    ok('2-003 aprovar com não conforme → 400', r.s === 400, 'status ' + r.s)
+    r = revMover('em_correcao', 'Ajustar pressões')
+    ok('2-003 devolver para correção', r.s === 200, 'status ' + r.s + ' ' + (r.j.message || ''))
+    ok(
+      '2-003 card em "Em correção"',
+      $app.findRecordById('projeto_disciplinas', C.id).getString('etapa') === 'em_correcao',
+    )
+    r = req(tP, 'GET', '/backend/v1/fila')
+    const fc = (r.j.itens || []).find((i) => i.id === C.id)
+    ok(
+      '2-003 itens a corrigir na fila do responsável',
+      !!fc && !!fc.correcao && fc.correcao.itens.length === 1,
+    )
+    r = req(tP, 'POST', '/backend/v1/cards/' + C.id + '/mover', {
+      para: 'aguardando_revisao',
+      versao: verCard(),
+    })
+    ok('2-003 reenviar sem marcar correção → 400', r.s === 400, 'status ' + r.s)
+    r = req(tC, 'GET', '/backend/v1/cards/' + C.id + '/revisao')
+    const r1v = r.j.rodadas[0].versao
+    ok('2-003 rodada 1 reprovada', r.j.rodadas[0].resultado === 'reprovado')
+    r = req(tP, 'POST', '/backend/v1/cards/' + C.id + '/revisao/' + R1 + '/corrigir', {
+      versao: r1v,
+      item: 'rv1',
+      corrigido: true,
+      nota: 'Bomba ajustada',
+    })
+    ok('2-003 projetista marca correção', r.s === 200, 'status ' + r.s)
+    r = req(tP, 'POST', '/backend/v1/cards/' + C.id + '/mover', {
+      para: 'aguardando_revisao',
+      versao: verCard(),
+    })
+    ok('2-003 reenviar após corrigir', r.s === 200, 'status ' + r.s + ' ' + (r.j.message || ''))
+    r = req(tC, 'POST', '/backend/v1/cards/' + C.id + '/revisao/abrir')
+    ok('2-003 abre rodada 2', r.s === 201 && r.j.numero === 2, 'status ' + r.s)
+    const R2 = r.j.id
+    vr = r.j.versao
+    r = req(tC, 'GET', '/backend/v1/cards/' + C.id + '/revisao')
+    const ab = (r.j.rodadas || []).find((x) => x.id === R2)
+    ok(
+      '2-003 rodada 2 herda resolvidos e deixa o não conforme em aberto',
+      !!ab && !!ab.itens.rv2 && !!ab.itens.rv3 && !ab.itens.rv1,
+    )
+    r = marcarR(tC, R2, 'rv1', 'excecao', { justificativa: 'Cliente aceitou; ajuste na obra' })
+    vr = r.j.versao
+    r = req(tC, 'POST', '/backend/v1/cards/' + C.id + '/mover', {
+      para: 'aprovado',
+      versao: verCard(),
+      revisao: { rodada: R2, versao: vr },
+    })
+    ok('2-003 aprovar com exceção', r.s === 200, 'status ' + r.s + ' ' + (r.j.message || ''))
+    r = req(tC, 'GET', '/backend/v1/cards/' + C.id + '/revisao')
+    ok(
+      '2-003 histórico com 2 rodadas e "aprovado com exceção"',
+      r.j.rodadas.length === 2 &&
+        r.j.rodadas[0].resultado === 'aprovado_com_excecao' &&
+        r.j.rodadas[1].resultado === 'reprovado',
+    )
+    const r2v = r.j.rodadas[0].versao
+    r = req(tP, 'POST', '/backend/v1/cards/' + C.id + '/revisao/' + R2 + '/reabrir', {
+      versao: r2v,
+      justificativa: 'teste',
+    })
+    ok('2-003 projetista não reabre (403)', r.s === 403, 'status ' + r.s)
+    r = req(tC, 'POST', '/backend/v1/cards/' + C.id + '/revisao/' + R2 + '/reabrir', {
+      versao: r2v,
+      justificativa: 'Faltou conferir',
+    })
+    ok('2-003 coordenador reabre a rodada', r.s === 200, 'status ' + r.s)
+    r = req(tC, 'GET', '/backend/v1/cards/' + C.id + '/revisao')
+    ok(
+      '2-003 reaberta: card em revisão e versão anterior no histórico',
+      r.j.etapa === 'aguardando_revisao' &&
+        r.j.rodadas[0].status === 'aberta' &&
+        r.j.rodadas[0].reaberturas.length === 1,
+    )
+    // sem checklist de revisão (disciplina D2)
+    const ver2 = () => $app.findRecordById('projeto_disciplinas', C2.id).getString('updated')
+    req(tP, 'POST', '/backend/v1/cards/' + C2.id + '/mover', {
+      para: 'em_elaboracao',
+      versao: ver2(),
+    })
+    req(tP, 'POST', '/backend/v1/cards/' + C2.id + '/mover', {
+      para: 'aguardando_revisao',
+      versao: ver2(),
+    })
+    r = req(tC, 'POST', '/backend/v1/cards/' + C2.id + '/mover', {
+      para: 'em_correcao',
+      versao: ver2(),
+    })
+    ok('2-003 sem checklist: devolver sem motivo → 400', r.s === 400, 'status ' + r.s)
+    r = req(tC, 'POST', '/backend/v1/cards/' + C2.id + '/mover', {
+      para: 'em_correcao',
+      versao: ver2(),
+      justificativa: 'Faltou o quadro',
+    })
+    ok('2-003 sem checklist: devolver com motivo', r.s === 200, 'status ' + r.s)
+    r = req(tC, 'GET', '/backend/v1/cards/' + C2.id + '/revisao')
+    ok(
+      '2-003 sem checklist: rodada marcada "sem checklist"',
+      (r.j.rodadas || []).length === 1 && r.j.rodadas[0].sem_checklist === true,
+    )
   } catch (err) {
     R.push('ERRO ' + String(err))
   }
@@ -355,6 +546,7 @@ cronAdd('zz_teste_chk', '* * * * *', () => {
     }
     if (C) {
       for (const t of [
+        'revisao_rodadas',
         'checklist_eventos',
         'checklist_pendencias',
         'checklists_aplicados',

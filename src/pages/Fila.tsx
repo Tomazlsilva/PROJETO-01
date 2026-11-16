@@ -357,6 +357,19 @@ function ListaItens({ itens, vazio }: { itens: ItemFila[]; vazio: string }) {
                 </span>
               )}
             </div>
+            {i.correcao && (
+              <div className="mt-1.5 text-xs rounded-md px-2 py-1 border bg-red-50 border-red-200 text-red-800">
+                <strong>Voltou da revisão (rodada {i.correcao.rodada}):</strong>{' '}
+                {i.correcao.itens.length > 0
+                  ? i.correcao.itens
+                      .map(
+                        (x) =>
+                          `${x.corrigido ? '✓ ' : ''}${x.texto}${x.observacao ? ` — ${x.observacao}` : ''}`,
+                      )
+                      .join('; ')
+                  : i.correcao.motivo}
+              </div>
+            )}
             {(i.pendencias_entrada ?? []).map((p) => (
               <div
                 key={p.id}

@@ -40,6 +40,12 @@ export interface ItemFila {
     created: string
   } | null
   pendencias_entrada?: PendenciaEntradaFila[]
+  // SPEC-2-003: itens devolvidos pela revisão
+  correcao?: {
+    rodada: number
+    motivo: string
+    itens: { texto: string; observacao: string; corrigido: boolean }[]
+  } | null
   versao: string
   created: string
 }

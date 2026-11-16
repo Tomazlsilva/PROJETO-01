@@ -206,6 +206,38 @@ routerAdd(
       const prazoProprio = c.getString('prazo').slice(0, 10)
       const prazo = prazoProprio || p.prazo
       const revisao = c.getString('bloqueio_revisao').slice(0, 10)
+      // SPEC-2-003 (CA-2-003-03): o que voltou da revisão para corrigir
+      let correcao = null
+      if (c.getString('etapa') === 'em_correcao') {
+        const rr = $app.findRecordsByFilter('revisao_rodadas', 'card = {:c}', '-numero', 1, 0, {
+          c: c.id,
+        })
+        if (rr.length > 0 && rr[0].getString('resultado') === 'reprovado') {
+          const marc = JSON.parse(rr[0].getString('itens') || '{}') || {}
+          let textos = []
+          try {
+            if (rr[0].getString('aplicado')) {
+              const its = JSON.parse(
+                $app
+                  .findRecordById('checklists_aplicados', rr[0].getString('aplicado'))
+                  .getString('itens') || '[]',
+              )
+              textos = its
+                .filter((it) => marc[it.id] && marc[it.id].resultado === 'nao_conforme')
+                .map((it) => ({
+                  texto: it.texto,
+                  observacao: marc[it.id].observacao || '',
+                  corrigido: !!marc[it.id].corrigido,
+                }))
+            }
+          } catch (_) {}
+          correcao = {
+            rodada: rr[0].getInt('numero'),
+            motivo: rr[0].getString('motivo'),
+            itens: textos,
+          }
+        }
+      }
       itens.push({
         id: c.id,
         etapa: c.getString('etapa'),
@@ -241,6 +273,7 @@ routerAdd(
             }
           : null,
         pendencias_entrada: pends,
+        correcao: correcao,
         versao: c.getString('updated'),
         created: c.getString('created'),
       })
