@@ -382,9 +382,15 @@ cronAdd('zz_teste_chk', '* * * * *', () => {
       run('DELETE FROM _authOrigins WHERE recordRef IN (' + U + ')')
       run('DELETE FROM users WHERE id IN (' + U + ')')
     }
-    R.push('limpeza concluída')
+    const sobraTeste =
+      $app.findRecordsByFilter('users', "email ~ 'zz.teste.'", '', 0, 0).length +
+      $app.findRecordsByFilter('disciplinas', "nome ~ 'ZZ Teste'", '', 0, 0).length +
+      $app.findRecordsByFilter('projetos', "nome ~ 'ZZ Teste'", '', 0, 0).length
+    R.push(
+      'limpeza concluída · registros de teste restantes (inclui rodadas anteriores): ' + sobraTeste,
+    )
   } catch (err) {
     R.push('ERRO limpeza ' + String(err))
   }
-  $app.logger().warn('TESTE_CHK', 'resultado', R.join('\n'))
+  for (const linha of R) console.log('TESTE_CHK ' + linha)
 })
