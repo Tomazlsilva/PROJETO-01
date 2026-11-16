@@ -26,6 +26,7 @@ import {
   BookOpen,
   ClipboardList,
   ShieldCheck,
+  FolderTree,
 } from 'lucide-react'
 import { salvarTema, temaSalvo, type Tema } from '@/lib/tema'
 import { TimerTopo } from '@/components/TimerTopo'
@@ -148,6 +149,7 @@ export default function AppShell({ roles, largo }: AppShellProps) {
               { to: '/admin/usuarios', rotulo: 'Equipe', icone: Users },
               { to: '/admin/fluxo', rotulo: 'Etapas do projeto', icone: Workflow },
               { to: '/admin/checklists', rotulo: 'Checklists', icone: ClipboardList },
+              { to: '/admin/pastas', rotulo: 'Pastas', icone: FolderTree },
               { to: '/admin/auditoria', rotulo: 'Acessos e ações', icone: ScrollText },
               { to: '/admin/backups', rotulo: 'Cópias de segurança', icone: DatabaseBackup },
               { to: '/admin/importar-planner', rotulo: 'Importar do Planner', icone: FileUp },

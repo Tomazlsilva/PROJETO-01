@@ -25,6 +25,7 @@ import Backups from './pages/admin/Backups'
 import ImportarPlanner from './pages/admin/ImportarPlanner'
 import Checklists from './pages/admin/Checklists'
 import Qualidade from './pages/Qualidade'
+import Pastas from './pages/admin/Pastas'
 import Layout from './components/Layout'
 import AppShell from './components/AppShell'
 
@@ -66,6 +67,7 @@ const App = () => (
             <Route path="/admin/usuarios" element={<Usuarios />} />
             <Route path="/admin/auditoria" element={<Auditoria />} />
             <Route path="/admin/fluxo" element={<Fluxo />} />
+            <Route path="/admin/pastas" element={<Pastas />} />
             <Route path="/admin/backups" element={<Backups />} />
             <Route path="/admin/importar-planner" element={<ImportarPlanner />} />
           </Route>

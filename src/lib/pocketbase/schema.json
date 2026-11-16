@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-16T13:25:45.669Z",
+  "generatedAt": "2026-11-16T13:30:27.579Z",
   "collections": [
     {
       "name": "users",
@@ -3362,6 +3362,130 @@
         {
           "name": "motivo",
           "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "autor",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate"
+          ]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "pastas_modelos",
+      "type": "base",
+      "apiRules": {
+        "list": null,
+        "view": null,
+        "create": null,
+        "update": null,
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "numero",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "caminho_projeto",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "subpastas",
+          "type": "json",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "motivo",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "autor",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate"
+          ]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_pastas_modelos_num ON pastas_modelos (numero)"
+      ]
+    },
+    {
+      "name": "pastas_config",
+      "type": "base",
+      "apiRules": {
+        "list": null,
+        "view": null,
+        "create": null,
+        "update": null,
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "criacao_automatica",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "pasta_raiz",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "acesso_liberado",
+          "type": "bool",
           "required": false,
           "system": false
         },

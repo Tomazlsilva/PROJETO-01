@@ -865,6 +865,81 @@ cronAdd('zz_teste_chk', '* * * * *', () => {
       motivo: 'teste',
     })
     ok('2-005 projetista não muda limiar (403)', r.s === 403, 'status ' + r.s)
+
+    // ---- SPEC-2-006 (só o editor; criação no OneDrive depende da Microsoft) ----
+    const adm = mkUser('adm', 'admin')
+    const tAd = adm.newAuthToken()
+    r = req(tC, 'GET', '/backend/v1/pastas')
+    ok('2-006 coordenador não acessa o modelo de pastas (403)', r.s === 403, 'status ' + r.s)
+    r = req(tAd, 'GET', '/backend/v1/pastas')
+    ok(
+      '2-006 admin vê o modelo e a criação automática desligada',
+      r.s === 200 && r.j.config && r.j.config.criacao_automatica === false,
+      'status ' + r.s,
+    )
+    r = req(tAd, 'POST', '/backend/v1/pastas/publicar', {
+      caminho_projeto: '{cliente}/{local}',
+      subpastas: [],
+    })
+    ok('2-006 caminho sem {projeto} → 400', r.s === 400, 'status ' + r.s)
+    r = req(tAd, 'POST', '/backend/v1/pastas/publicar', {
+      caminho_projeto: '{cliente}/{projeto}',
+      subpastas: ['{foo}/x'],
+    })
+    ok('2-006 variável desconhecida → 400', r.s === 400, 'status ' + r.s)
+    const subTeste = ['{disciplina}/Recebidos', '{disciplina}/PDF', 'Atas']
+    r = req(tAd, 'POST', '/backend/v1/pastas/publicar', {
+      caminho_projeto: '{cliente}/{local}/{projeto}',
+      subpastas: subTeste,
+      motivo: 'teste',
+    })
+    ok('2-006 publicar versão do modelo', r.s === 201 && r.j.numero >= 1, 'status ' + r.s)
+    const nPast = r.j.numero
+    r = req(tAd, 'POST', '/backend/v1/pastas/publicar', {
+      caminho_projeto: '{cliente}/{local}/{projeto}',
+      subpastas: subTeste.concat(['Fotos']),
+      motivo: 'teste 2',
+    })
+    ok(
+      '2-006 nova publicação gera nova versão',
+      r.s === 201 && r.j.numero === nPast + 1,
+      'status ' + r.s,
+    )
+    r = req(tAd, 'POST', '/backend/v1/pastas/simular', {
+      projeto: pq.id,
+      caminho_projeto: '{cliente}/{local}/{projeto}',
+      subpastas: subTeste,
+    })
+    ok(
+      '2-006 prévia: cliente/local vazios saem do caminho e subpastas por disciplina',
+      r.s === 200 &&
+        r.j.pasta_projeto === 'ZZ Teste qualidade ' + sfx &&
+        r.j.caminhos.length === 20 &&
+        r.j.campos_vazios.length === 2,
+      'status ' + r.s + ' ' + (r.j.pasta_projeto || '') + ' · ' + (r.j.caminhos || []).length,
+    )
+    const pz = new Record($app.findCollectionByNameOrId('projetos'))
+    pz.set('nome', 'ZZ Teste a:b*c? ' + sfx)
+    pz.set('coordenador', coord.id)
+    pz.set('local', 'Campinas/SP')
+    $app.save(pz)
+    ids.projetos.push(pz.id)
+    r = req(tAd, 'POST', '/backend/v1/pastas/simular', {
+      projeto: pz.id,
+      caminho_projeto: '{cliente}/{local}/{projeto}',
+      subpastas: subTeste,
+    })
+    ok(
+      '2-006 caracteres não aceitos pelo OneDrive são trocados',
+      r.s === 200 && r.j.pasta_projeto === 'Campinas-SP/ZZ Teste a-b-c- ' + sfx,
+      (r.j.pasta_projeto || '') + ' ' + (r.j.message || ''),
+    )
+    r = req(tAd, 'POST', '/backend/v1/pastas/simular', { todos: true })
+    ok(
+      '2-006 simulação para projetos existentes (nada é criado)',
+      r.s === 200 && r.j.projetos >= 2 && (r.j.aviso || '').indexOf('nada foi criado') >= 0,
+      'status ' + r.s,
+    )
   } catch (err) {
     R.push('ERRO ' + String(err))
   }
@@ -912,6 +987,8 @@ cronAdd('zz_teste_chk', '* * * * *', () => {
     }
     if (ids.disc.length) run('DELETE FROM disciplinas WHERE id IN (' + lista(ids.disc) + ')')
     if (U) {
+      run('DELETE FROM pastas_modelos WHERE autor IN (' + U + ')')
+      run('DELETE FROM config_qualidade WHERE autor IN (' + U + ')')
       run('DELETE FROM auth_audit WHERE actor_id IN (' + U + ')')
       run('DELETE FROM _authOrigins WHERE recordRef IN (' + U + ')')
       run('DELETE FROM users WHERE id IN (' + U + ')')
