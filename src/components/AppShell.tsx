@@ -25,6 +25,7 @@ import {
   Sun,
   BookOpen,
   ClipboardList,
+  ShieldCheck,
 } from 'lucide-react'
 import { salvarTema, temaSalvo, type Tema } from '@/lib/tema'
 import { TimerTopo } from '@/components/TimerTopo'
@@ -119,6 +120,10 @@ export default function AppShell({ roles, largo }: AppShellProps) {
         { to: '/kanban', rotulo: 'Projetos', icone: KanbanSquare },
         { to: '/calendario', rotulo: 'Calendário', icone: CalendarDays },
         ...(vePendencias ? [{ to: '/falhas', rotulo: 'Pendências', icone: AlertTriangle }] : []),
+        // SPEC-2-005: projetista vê só os próprios números de qualidade
+        ...(!veAcompanhamento
+          ? [{ to: '/painel/qualidade', rotulo: 'Minha qualidade', icone: ShieldCheck }]
+          : []),
       ],
     },
     ...(veAcompanhamento
@@ -127,6 +132,7 @@ export default function AppShell({ roles, largo }: AppShellProps) {
             titulo: 'Acompanhamento',
             itens: [
               { to: '/painel', rotulo: 'Indicadores', icone: Gauge, end: true },
+              { to: '/painel/qualidade', rotulo: 'Qualidade', icone: ShieldCheck },
               { to: '/painel/entregas', rotulo: 'Entregas', icone: BarChart3 },
               { to: '/baseline', rotulo: 'Apontamentos', icone: Clock },
               { to: '/mudancas', rotulo: 'Registro de alterações', icone: History },

@@ -694,6 +694,177 @@ cronAdd('zz_teste_chk', '* * * * *', () => {
         cv2.atividade &&
         cv2.atividade.status === 'cancelada',
     )
+
+    // ---- SPEC-2-005 (fixture da SPEC: 6 disciplinas, 40 aplicáveis, 34 conformes, 3 N/A, 1 exceção,
+    //      3 emissões com 2 correções válidas e 1 inválida, 3 pessoas) ----
+    const pA = mkUser('pa', 'projetista')
+    const pB = mkUser('pb', 'projetista')
+    const pC = mkUser('pc', 'projetista')
+    const outroCoord = mkUser('coord2', 'coordenador')
+    const tA = pA.newAuthToken()
+    const tO = outroCoord.newAuthToken()
+    const pq = new Record($app.findCollectionByNameOrId('projetos'))
+    pq.set('nome', 'ZZ Teste qualidade ' + sfx)
+    pq.set('coordenador', coord.id)
+    pq.set('membros', [pA.id, pB.id, pC.id])
+    $app.save(pq)
+    ids.projetos.push(pq.id)
+    const plano = [
+      // [pessoa, nº itens, N/A, exceção, não conformes]
+      [pA, 7, 2, 0, 1],
+      [pA, 7, 1, 0, 1],
+      [pB, 7, 0, 1, 0],
+      [pB, 7, 0, 0, 2],
+      [pC, 8, 0, 0, 1],
+      [pC, 8, 0, 0, 1],
+    ]
+    const colAp = $app.findCollectionByNameOrId('checklists_aplicados')
+    const colRd = $app.findCollectionByNameOrId('revisao_rodadas')
+    const qCards = []
+    for (let i = 0; i < plano.length; i++) {
+      const [pess, n, na, exc, nc] = plano[i]
+      const dq = mkDisc('q' + i)
+      const cq = new Record(ccol)
+      cq.set('projeto', pq.id)
+      cq.set('disciplina', dq.id)
+      cq.set('responsavel', pess.id)
+      $app.save(cq)
+      ids.cards.push(cq.id)
+      qCards.push(cq)
+      const its = []
+      for (let k = 0; k < n; k++)
+        its.push({
+          id: 'q' + k,
+          texto: 'Item ' + (k + 1),
+          grupo: '',
+          severidade: k === 0 ? 'critico' : 'normal',
+          referencia: '',
+        })
+      const vq = $app.findRecordsByFilter('checklist_versoes', 'modelo = {:m}', '', 1, 0, {
+        m: MR,
+      })[0]
+      const apq = new Record(colAp)
+      apq.set('card', cq.id)
+      apq.set('projeto', pq.id)
+      apq.set('tipo', 'revisao')
+      apq.set('modelo', MR)
+      apq.set('versao', vq.id)
+      apq.set('numero', 1)
+      apq.set('itens', its)
+      apq.set('resultados', {})
+      $app.save(apq)
+      const marc = {}
+      for (let k = 0; k < n; k++) {
+        let res = 'conforme'
+        if (k < na) res = 'nao_se_aplica'
+        else if (k < na + exc) res = 'excecao'
+        else if (k < na + exc + nc) res = 'nao_conforme'
+        marc['q' + k] = { resultado: res, autor: coord.id }
+      }
+      const r1 = new Record(colRd)
+      r1.set('card', cq.id)
+      r1.set('projeto', pq.id)
+      r1.set('aplicado', apq.id)
+      r1.set('numero', 1)
+      r1.set('status', 'encerrada')
+      r1.set('resultado', nc > 0 ? 'reprovado' : exc > 0 ? 'aprovado_com_excecao' : 'aprovado')
+      r1.set('itens', marc)
+      r1.set('encerrada_em', new Date().toISOString())
+      $app.save(r1)
+      if (nc > 0) {
+        const r2 = new Record(colRd)
+        r2.set('card', cq.id)
+        r2.set('projeto', pq.id)
+        r2.set('aplicado', apq.id)
+        r2.set('numero', 2)
+        r2.set('status', 'encerrada')
+        r2.set('resultado', 'aprovado')
+        r2.set('itens', {})
+        r2.set('encerrada_em', new Date().toISOString())
+        $app.save(r2)
+      }
+      if (i < 3) {
+        const eq = new Record($app.findCollectionByNameOrId('entregas'))
+        eq.set('projeto', pq.id)
+        eq.set('tipo', 'final')
+        eq.set('data', hoje + ' 12:00:00.000Z')
+        eq.set('disciplinas', [cq.id])
+        $app.save(eq)
+        const mq = new Record($app.findCollectionByNameOrId('emissoes'))
+        mq.set('card', cq.id)
+        mq.set('projeto', pq.id)
+        mq.set('rodada', r1.id)
+        mq.set('entrega', eq.id)
+        mq.set('tipo', 'final')
+        mq.set('rotulo', 'R00')
+        mq.set('data', hoje + ' 12:00:00.000Z')
+        mq.set('destinatario', 'Teste')
+        mq.set('responsavel', coord.id)
+        mq.set('status', 'emitida')
+        $app.save(mq)
+        const cr = new Record($app.findCollectionByNameOrId('correcoes_pos_emissao'))
+        cr.set('emissao', mq.id)
+        cr.set('card', cq.id)
+        cr.set('projeto', pq.id)
+        cr.set('origem', i === 0 ? 'obra' : i === 1 ? 'cliente' : 'interna')
+        cr.set('severidade', i === 0 ? 'media' : i === 1 ? 'alta' : 'baixa')
+        cr.set('descricao', 'Correção ' + i)
+        cr.set('decisao', i < 2 ? 'valida' : 'invalida')
+        $app.save(cr)
+      }
+    }
+    r = req(tC, 'GET', '/backend/v1/painel/qualidade?projeto=' + pq.id)
+    const t5 = r.j.total || {}
+    ok(
+      '2-005 K2 = 85% (34 de 40)',
+      r.s === 200 && t5.k2 === 85 && t5.conformes === 34 && t5.aplicaveis === 40,
+      'status ' + r.s + ' ' + JSON.stringify(t5).slice(0, 300),
+    )
+    ok('2-005 N/A e exceção fora do denominador (3 e 1)', t5.na === 3 && t5.excecoes === 1)
+    ok(
+      '2-005 K2 conclusivo com 6 disciplinas',
+      t5.disciplinas_revisadas === 6 && t5.k2_inconclusivo === false,
+    )
+    ok(
+      '2-005 K3 inconclusivo (3 de 5)',
+      t5.emitidas === 3 && t5.correcoes_validas === 2 && t5.k3_inconclusivo === true,
+    )
+    ok(
+      '2-005 K3 por origem e severidade',
+      r.j.k3_matriz &&
+        r.j.k3_matriz.obra.media === 1 &&
+        r.j.k3_matriz.cliente.alta === 1 &&
+        r.j.correcoes_invalidas === 1,
+    )
+    ok(
+      '2-005 retorno 45,5% (5 de 11) e 1,8 rodadas até aprovar',
+      t5.retorno === 45.5 && t5.rodadas_ate_aprovar === 1.8,
+      t5.retorno + ' / ' + t5.rodadas_ate_aprovar,
+    )
+    ok(
+      '2-005 3 pessoas e 44 linhas de drill-down do K2',
+      (r.j.por_pessoa || []).length === 3 && (r.j.linhas.k2 || []).length === 44,
+    )
+    r = req(tA, 'GET', '/backend/v1/painel/qualidade?projeto=' + pq.id + '&pessoa=' + pB.id)
+    ok(
+      '2-005 projetista vê só os próprios números',
+      r.s === 200 &&
+        r.j.escopo === 'proprio' &&
+        r.j.total.disciplinas_revisadas === 2 &&
+        (r.j.por_pessoa || []).length === 1,
+      JSON.stringify(r.j.total || {}).slice(0, 120),
+    )
+    r = req(tO, 'GET', '/backend/v1/painel/qualidade?projeto=' + pq.id)
+    ok(
+      '2-005 outro coordenador não vê projeto que não coordena',
+      r.s === 200 && r.j.total.disciplinas_revisadas === 0,
+    )
+    r = req(tA, 'POST', '/backend/v1/painel/qualidade/config', {
+      limiar_k2: 3,
+      limiar_k3: 3,
+      motivo: 'teste',
+    })
+    ok('2-005 projetista não muda limiar (403)', r.s === 403, 'status ' + r.s)
   } catch (err) {
     R.push('ERRO ' + String(err))
   }

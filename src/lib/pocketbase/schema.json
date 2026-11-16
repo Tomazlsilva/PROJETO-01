@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-16T13:19:49.083Z",
+  "generatedAt": "2026-11-16T13:25:45.669Z",
   "collections": [
     {
       "name": "users",
@@ -3335,6 +3335,64 @@
         "CREATE INDEX idx_correcoes_proj ON correcoes_pos_emissao (projeto, created)",
         "CREATE INDEX idx_correcoes_emissao ON correcoes_pos_emissao (emissao)"
       ]
+    },
+    {
+      "name": "config_qualidade",
+      "type": "base",
+      "apiRules": {
+        "list": null,
+        "view": null,
+        "create": null,
+        "update": null,
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "limiar_k2",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "limiar_k3",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "motivo",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "autor",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate"
+          ]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
+        }
+      ],
+      "indexes": []
     }
   ]
 }

@@ -24,6 +24,7 @@ import Mudancas from './pages/Mudancas'
 import Backups from './pages/admin/Backups'
 import ImportarPlanner from './pages/admin/ImportarPlanner'
 import Checklists from './pages/admin/Checklists'
+import Qualidade from './pages/Qualidade'
 import Layout from './components/Layout'
 import AppShell from './components/AppShell'
 
@@ -45,6 +46,7 @@ const App = () => (
             <Route path="/projetos/novo" element={<ProjetoNovo />} />
             <Route path="/projetos/:id" element={<ProjetoDetalhe />} />
             <Route path="/fila" element={<Fila />} />
+            <Route path="/painel/qualidade" element={<Qualidade />} />
           </Route>
           <Route element={<AppShell largo />}>
             <Route path="/kanban" element={<Kanban />} />
