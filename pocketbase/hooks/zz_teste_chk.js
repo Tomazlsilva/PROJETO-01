@@ -1,0 +1,390 @@
+// TEMPORÁRIO — teste ponta a ponta das SPECs 2-001/2-002 na prévia. Roda uma vez,
+// grava o resultado no log ("TESTE_CHK") e apaga todos os dados de teste. Será removido.
+cronAdd('zz_teste_chk', '* * * * *', () => {
+  if ($app.store().get('zz_teste_chk_feito')) return
+  $app.store().set('zz_teste_chk_feito', true)
+  const BASE = 'https://login-do-crm-921ce.shrd03.internal.goskip.dev'
+  const R = []
+  const ok = (nome, cond, extra) =>
+    R.push((cond ? 'OK   ' : 'FALHA ') + nome + (extra ? ' | ' + extra : ''))
+  const ids = { users: [], disc: [], modelos: [], projetos: [], cards: [] }
+  const req = (tok, method, path, body) => {
+    try {
+      const r = $http.send({
+        url: BASE + path,
+        method: method,
+        body: body ? JSON.stringify(body) : '',
+        headers: { 'content-type': 'application/json', Authorization: tok },
+        timeout: 30,
+      })
+      return { s: r.statusCode, j: r.json || {} }
+    } catch (err) {
+      return { s: 0, j: { erro: String(err) } }
+    }
+  }
+  try {
+    const sfx = $security.randomStringWithAlphabet(6, 'abcdefghijkmnpqrstuvwxyz23456789')
+    const users = $app.findCollectionByNameOrId('users')
+    const mkUser = (nome, role) => {
+      const u = new Record(users)
+      u.set('email', 'zz.teste.' + nome + '.' + sfx + '@exemplo-teste.invalid')
+      u.setPassword($security.randomString(30))
+      u.set('name', 'ZZ Teste ' + nome)
+      u.set('role', role)
+      u.set('active', true)
+      u.set('verified', true)
+      u.set('session_expires_at', new Date(Date.now() + 3 * 3600000).toISOString())
+      $app.save(u)
+      ids.users.push(u.id)
+      return u
+    }
+    const coord = mkUser('coord', 'coordenador')
+    const proj = mkUser('proj', 'projetista')
+    const tC = coord.newAuthToken()
+    const tP = proj.newAuthToken()
+
+    const dcol = $app.findCollectionByNameOrId('disciplinas')
+    const mkDisc = (nome) => {
+      const d = new Record(dcol)
+      d.set('nome', 'ZZ Teste ' + nome + ' ' + sfx)
+      d.set('ativa', true)
+      d.set('personalizada', true)
+      $app.save(d)
+      ids.disc.push(d.id)
+      return d
+    }
+    const D = mkDisc('real')
+    const D2 = mkDisc('exemplo')
+
+    // ---- SPEC-2-001 ----
+    let r = req(tP, 'POST', '/backend/v1/checklists', { disciplina: D.id, tipo: 'entrada' })
+    ok('2-001 projetista não cria modelo (403)', r.s === 403, 'status ' + r.s)
+    r = req(tC, 'POST', '/backend/v1/checklists', {
+      disciplina: D.id,
+      tipo: 'entrada',
+      tipologia: '',
+    })
+    ok('2-001 coordenador cria modelo (201)', r.s === 201, 'status ' + r.s)
+    const M = r.j.id
+    ids.modelos.push(M)
+    r = req(tC, 'GET', '/backend/v1/checklists/' + M)
+    let base = r.j.updated
+    const itens = [
+      {
+        id: 'itcritA',
+        texto: 'Planta de arquitetura atualizada',
+        grupo: 'Base',
+        severidade: 'critico',
+        referencia: '',
+      },
+      {
+        id: 'itnormB',
+        texto: 'Layout de mobiliário',
+        grupo: 'Base',
+        severidade: 'normal',
+        referencia: '',
+      },
+    ]
+    r = req(tC, 'POST', '/backend/v1/checklists/' + M + '/publicar', {
+      base: base,
+      itens: [{ id: 'x', texto: '  ' }],
+    })
+    ok('2-001 publicar com item vazio é recusado (400)', r.s === 400, 'status ' + r.s)
+    r = req(tC, 'POST', '/backend/v1/checklists/' + M + '/rascunho', { base: base, itens: itens })
+    ok('2-001 salvar rascunho', r.s === 200, 'status ' + r.s)
+    base = r.j.updated
+    r = req(tC, 'POST', '/backend/v1/checklists/' + M + '/publicar', {
+      base: 'velho',
+      itens: itens,
+    })
+    ok('2-001 base desatualizada → 409', r.s === 409, 'status ' + r.s)
+    r = req(tC, 'POST', '/backend/v1/checklists/' + M + '/publicar', { base: base, itens: itens })
+    ok(
+      '2-001 publicar v1',
+      r.s === 200 && r.j.numero === 1,
+      'status ' + r.s + ' numero ' + r.j.numero,
+    )
+
+    // vigência duplicada
+    r = req(tC, 'POST', '/backend/v1/checklists', {
+      disciplina: D.id,
+      tipo: 'entrada',
+      duplicar_de: { modelo: M },
+    })
+    const M2 = r.j.id
+    ids.modelos.push(M2)
+    ok('2-001 duplicar copia itens', r.s === 201, 'status ' + r.s)
+    r = req(tC, 'GET', '/backend/v1/checklists/' + M2)
+    ok('2-001 duplicado tem 2 itens no rascunho', (r.j.rascunho || []).length === 2)
+    r = req(tC, 'POST', '/backend/v1/checklists/' + M2 + '/publicar', {
+      base: r.j.updated,
+      itens: r.j.rascunho,
+    })
+    ok(
+      '2-001 segunda vigência para mesma disciplina/tipo → 409',
+      r.s === 409 && r.j.code === 'vigencia_duplicada',
+      'status ' + r.s,
+    )
+
+    // versão imutável
+    const v1 = $app.findRecordsByFilter('checklist_versoes', 'modelo = {:m}', '', 1, 0, { m: M })[0]
+    let imutavel = false
+    try {
+      v1.set('nota', 'alterada')
+      $app.save(v1)
+    } catch (_) {
+      imutavel = true
+    }
+    ok('2-001 versão publicada não pode ser alterada', imutavel)
+
+    // modelo exemplo em D2 (não deve ser aplicado)
+    const mcol = $app.findCollectionByNameOrId('checklist_modelos')
+    const ex = new Record(mcol)
+    ex.set('disciplina', D2.id)
+    ex.set('tipo', 'entrada')
+    ex.set('tipologia', '')
+    ex.set('estado', 'ativo')
+    ex.set('exemplo', true)
+    ex.set('vigente', true)
+    ex.set('versao_atual', 1)
+    $app.save(ex)
+    ids.modelos.push(ex.id)
+    const exv = new Record($app.findCollectionByNameOrId('checklist_versoes'))
+    exv.set('modelo', ex.id)
+    exv.set('numero', 1)
+    exv.set('itens', [
+      { id: 'e1', texto: 'Exemplo crítico', grupo: '', severidade: 'critico', referencia: '' },
+    ])
+    exv.set('total_itens', 1)
+    exv.set('criticos', 1)
+    $app.save(exv)
+
+    // ---- SPEC-2-002 ----
+    const pr = new Record($app.findCollectionByNameOrId('projetos'))
+    pr.set('nome', 'ZZ Teste checklist ' + sfx)
+    pr.set('coordenador', coord.id)
+    pr.set('membros', [proj.id])
+    pr.set('prioridade', 'Normal')
+    $app.save(pr)
+    ids.projetos.push(pr.id)
+    const ccol = $app.findCollectionByNameOrId('projeto_disciplinas')
+    const mkCard = (d) => {
+      const c = new Record(ccol)
+      c.set('projeto', pr.id)
+      c.set('disciplina', d.id)
+      c.set('responsavel', proj.id)
+      $app.save(c)
+      ids.cards.push(c.id)
+      return c
+    }
+    const C = mkCard(D)
+    const C2 = mkCard(D2)
+    const etapaC = $app.findRecordById('projeto_disciplinas', C.id).getString('etapa')
+    ok('2-002 card novo entra em entrada_pendente', etapaC === 'entrada_pendente', etapaC)
+    r = req(tP, 'GET', '/backend/v1/cards/' + C.id + '/checklists')
+    ok(
+      '2-002 checklist de entrada v1 aplicado ao entrar na etapa',
+      r.s === 200 && r.j.entrada && r.j.entrada.numero === 1,
+      'status ' + r.s,
+    )
+    ok('2-002 1 item crítico pendente', r.j.entrada && r.j.entrada.criticos_pendentes.length === 1)
+    let vck = r.j.entrada ? r.j.entrada.versao : ''
+    r = req(tP, 'GET', '/backend/v1/cards/' + C2.id + '/checklists')
+    ok(
+      '2-002 modelo de exemplo NÃO é aplicado (sem checklist)',
+      r.s === 200 && r.j.entrada === null,
+    )
+
+    // trava antes de Pronto
+    const verCard = () => $app.findRecordById('projeto_disciplinas', C.id).getString('updated')
+    r = req(tP, 'POST', '/backend/v1/cards/' + C.id + '/mover', {
+      para: 'pronto',
+      versao: verCard(),
+    })
+    ok(
+      '2-002 mover p/ Pronto com crítico pendente → 409',
+      r.s === 409 && r.j.code === 'checklist_entrada_pendente',
+      'status ' + r.s + ' ' + (r.j.message || ''),
+    )
+    r = req(tP, 'POST', '/backend/v1/cards/' + C2.id + '/mover', {
+      para: 'pronto',
+      versao: $app.findRecordById('projeto_disciplinas', C2.id).getString('updated'),
+    })
+    ok(
+      '2-002 disciplina sem checklist não trava',
+      r.s === 200,
+      'status ' + r.s + ' ' + (r.j.message || ''),
+    )
+
+    // N/A sem justificativa
+    r = req(tP, 'POST', '/backend/v1/cards/' + C.id + '/checklists/entrada/marcar', {
+      versao: vck,
+      item: 'itnormB',
+      resultado: 'nao_se_aplica',
+    })
+    ok('2-002 "não se aplica" sem justificativa → 400', r.s === 400, 'status ' + r.s)
+    r = req(tP, 'POST', '/backend/v1/cards/' + C.id + '/checklists/entrada/marcar', {
+      versao: vck,
+      item: 'itnormB',
+      resultado: 'nao_se_aplica',
+      justificativa: 'Galpão sem layout',
+    })
+    ok('2-002 "não se aplica" com justificativa', r.s === 200, 'status ' + r.s)
+    vck = r.j.versao
+    // não conforme com pendência
+    const amanha = new Date(Date.now() - 3 * 3600000 + 2 * 86400000).toISOString().slice(0, 10)
+    r = req(tP, 'POST', '/backend/v1/cards/' + C.id + '/checklists/entrada/marcar', {
+      versao: vck,
+      item: 'itcritA',
+      resultado: 'nao_conforme',
+      pendencia: { motivo: 'Cliente não enviou a rev. 03', dono: coord.id, prazo: amanha },
+    })
+    ok(
+      '2-002 não conforme abre pendência',
+      r.s === 200,
+      'status ' + r.s + ' ' + JSON.stringify(r.j).slice(0, 200),
+    )
+    vck = r.j.versao
+    r = req(tP, 'POST', '/backend/v1/cards/' + C.id + '/checklists/entrada/marcar', {
+      versao: 'velha',
+      item: 'itcritA',
+      resultado: 'conforme',
+    })
+    ok('2-002 marcação sobre versão velha → 409', r.s === 409, 'status ' + r.s)
+    r = req(tC, 'GET', '/backend/v1/fila')
+    const naFila = (r.j.itens || []).find((i) => i.id === C.id)
+    ok(
+      '2-002 pendência aparece na fila do dono',
+      !!naFila &&
+        (naFila.motivos || []).indexOf('pendencia_entrada') >= 0 &&
+        (naFila.pendencias_entrada || []).length === 1,
+      'status ' + r.s,
+    )
+    r = req(tP, 'POST', '/backend/v1/cards/' + C.id + '/mover', {
+      para: 'pronto',
+      versao: verCard(),
+    })
+    ok('2-002 ainda travado com pendência aberta', r.s === 409)
+    r = req(tP, 'POST', '/backend/v1/cards/' + C.id + '/checklists/entrada/marcar', {
+      versao: vck,
+      item: 'itcritA',
+      resultado: 'conforme',
+    })
+    ok('2-002 marcar conforme', r.s === 200, 'status ' + r.s)
+    const abertas = $app.findRecordsByFilter(
+      'checklist_pendencias',
+      "card = {:c} && status = 'aberta'",
+      '',
+      0,
+      0,
+      { c: C.id },
+    )
+    ok('2-002 pendência fechou sozinha', abertas.length === 0)
+
+    // nova versão do modelo não muda o card; troca só pelo coordenador
+    r = req(tC, 'GET', '/backend/v1/checklists/' + M)
+    const itens2 = itens.concat([
+      { id: 'itnovoC', texto: 'Item novo da v2', grupo: '', severidade: 'normal', referencia: '' },
+    ])
+    r = req(tC, 'POST', '/backend/v1/checklists/' + M + '/rascunho', {
+      base: r.j.updated,
+      itens: itens2,
+    })
+    r = req(tC, 'POST', '/backend/v1/checklists/' + M + '/publicar', {
+      base: r.j.updated,
+      itens: itens2,
+    })
+    ok('2-001 publicar v2', r.s === 200 && r.j.numero === 2, 'status ' + r.s)
+    r = req(tP, 'GET', '/backend/v1/cards/' + C.id + '/checklists')
+    ok(
+      '2-002 card continua na v1 após publicar v2',
+      r.j.entrada && r.j.entrada.numero === 1 && r.j.vigente.entrada.numero === 2,
+    )
+    vck = r.j.entrada.versao
+    r = req(tP, 'POST', '/backend/v1/cards/' + C.id + '/checklists/entrada/aplicar', {
+      motivo: 'teste',
+      versao: vck,
+    })
+    ok('2-002 projetista não troca versão (403)', r.s === 403, 'status ' + r.s)
+    r = req(tC, 'POST', '/backend/v1/cards/' + C.id + '/checklists/entrada/aplicar', {
+      motivo: 'Atualizar para v2',
+      versao: vck,
+    })
+    ok('2-002 coordenador troca para v2', r.s === 200 && r.j.numero === 2, 'status ' + r.s)
+    r = req(tP, 'GET', '/backend/v1/cards/' + C.id + '/checklists')
+    const a = (r.j.entrada && r.j.entrada.itens) || []
+    ok(
+      '2-002 marcações mantidas na troca',
+      a.length === 3 && a[0].resultado === 'conforme' && a[1].resultado === 'nao_se_aplica',
+    )
+
+    r = req(tP, 'POST', '/backend/v1/cards/' + C.id + '/mover', {
+      para: 'pronto',
+      versao: verCard(),
+    })
+    ok(
+      '2-002 com críticos resolvidos vai para Pronto',
+      r.s === 200,
+      'status ' + r.s + ' ' + (r.j.message || ''),
+    )
+    // checklist de revisão aplicado ao chegar em "Aguardando revisão": sem modelo real → nenhum
+    r = req(tP, 'GET', '/backend/v1/cards/' + C.id + '/checklists')
+    ok(
+      '2-002 eventos registrados no histórico',
+      (r.j.eventos || []).length >= 5,
+      String((r.j.eventos || []).length),
+    )
+  } catch (err) {
+    R.push('ERRO ' + String(err))
+  }
+
+  // ---- limpeza (SQL direto: as versões são imutáveis pelos hooks) ----
+  try {
+    const db = $app.db()
+    const lista = (a) => a.map((x) => "'" + x.replace(/[^a-z0-9]/g, '') + "'").join(',')
+    const C = lista(ids.cards)
+    const P = lista(ids.projetos)
+    const M = lista(ids.modelos)
+    const U = lista(ids.users)
+    const run = (sql) => {
+      try {
+        db.newQuery(sql).execute()
+      } catch (err) {
+        R.push('limpeza: ' + sql.slice(0, 60) + ' → ' + String(err).slice(0, 120))
+      }
+    }
+    if (C) {
+      for (const t of [
+        'checklist_eventos',
+        'checklist_pendencias',
+        'checklists_aplicados',
+        'transicoes',
+        'notificacoes',
+        'atividades',
+        'handoff_eventos',
+        'tempo_eventos',
+      ])
+        run('DELETE FROM ' + t + ' WHERE card IN (' + C + ')')
+      run('DELETE FROM projeto_disciplinas WHERE id IN (' + C + ')')
+    }
+    if (P) {
+      for (const t of ['notificacoes', 'projeto_historico', 'entrega_historico', 'entregas'])
+        run('DELETE FROM ' + t + ' WHERE projeto IN (' + P + ')')
+      run('DELETE FROM projetos WHERE id IN (' + P + ')')
+    }
+    if (M) {
+      run('DELETE FROM checklist_versoes WHERE modelo IN (' + M + ')')
+      run('DELETE FROM checklist_modelos WHERE id IN (' + M + ')')
+    }
+    if (ids.disc.length) run('DELETE FROM disciplinas WHERE id IN (' + lista(ids.disc) + ')')
+    if (U) {
+      run('DELETE FROM auth_audit WHERE actor_id IN (' + U + ')')
+      run('DELETE FROM _authOrigins WHERE recordRef IN (' + U + ')')
+      run('DELETE FROM users WHERE id IN (' + U + ')')
+    }
+    R.push('limpeza concluída')
+  } catch (err) {
+    R.push('ERRO limpeza ' + String(err))
+  }
+  $app.logger().warn('TESTE_CHK', 'resultado', R.join('\n'))
+})
