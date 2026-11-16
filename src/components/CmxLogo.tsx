@@ -34,7 +34,14 @@ export const CmxLogo: React.FC<CmxLogoProps> = ({
   }[size]
   return (
     <div className={`flex items-center gap-2.5 select-none ${className}`}>
-      <img src={LOGO_GAVAZZI} alt="Gavazzi Engenharia" className={`${tam.img} w-auto`} />
+      {/* No modo escuro o logo vira branco e o fundo branco da arte some:
+          inverte (fundo vai a preto, marca fica clara), clareia e usa "screen",
+          que deixa o preto transparente sobre o fundo escuro. */}
+      <img
+        src={LOGO_GAVAZZI}
+        alt="Gavazzi Engenharia"
+        className={`${tam.img} w-auto dark:invert dark:grayscale dark:brightness-[1.9] dark:contrast-[1.2] dark:mix-blend-screen`}
+      />
       <div className="leading-tight">
         <div className={`font-extrabold tracking-tight text-slate-900 ${tam.texto}`}>Central</div>
         <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
