@@ -251,6 +251,51 @@ routerAdd(
     if (Object.keys(erros).length > 0)
       throw new BadRequestError('Faltam informações para mover o card.', erros)
 
+    // SPEC-2-002 (CA-2-002-06): item crítico de entrada pendente segura o card antes de "Pronto"
+    // (vale para ir a "Pronto" e para sair adiante da etapa onde o checklist de entrada é aplicado)
+    const ckEtapas = cfg.checklists || {
+      entrada: 'entrada_pendente',
+      revisao: 'aguardando_revisao',
+    }
+    const adiante = ORDEM.indexOf(para) > ORDEM.indexOf(de)
+    if (adiante && (para === 'pronto' || de === ckEtapas.entrada)) {
+      const ap = $app.findRecordsByFilter(
+        'checklists_aplicados',
+        "card = {:c} && tipo = 'entrada'",
+        '',
+        1,
+        0,
+        { c: id },
+      )
+      if (ap.length > 0) {
+        const res = JSON.parse(ap[0].getString('resultados') || '{}') || {}
+        const faltam = JSON.parse(ap[0].getString('itens') || '[]').filter((it) => {
+          const r = res[it.id] ? res[it.id].resultado : ''
+          return it.severidade === 'critico' && r !== 'conforme' && r !== 'nao_se_aplica'
+        })
+        if (faltam.length > 0) {
+          return e.json(409, {
+            code: 'checklist_entrada_pendente',
+            message:
+              'Não pode ir para "' +
+              nomeEtapa(para) +
+              '": ' +
+              (faltam.length === 1
+                ? 'falta 1 item crítico'
+                : 'faltam ' + faltam.length + ' itens críticos') +
+              ' do checklist de entrada — ' +
+              faltam
+                .slice(0, 3)
+                .map((x) => '"' + x.texto + '"')
+                .join(', ') +
+              (faltam.length > 3 ? '…' : '') +
+              '.',
+            itens: faltam.map((x) => x.texto),
+          })
+        }
+      }
+    }
+
     let situacao = 'ok'
     let versao = ''
     let handoff = null

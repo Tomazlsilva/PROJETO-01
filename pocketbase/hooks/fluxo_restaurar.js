@@ -167,7 +167,16 @@ routerAdd(
         nova = new Record(tx.findCollectionByNameOrId('fluxo_versoes'))
         nova.set('numero', numero)
         nova.set('ativa', true)
-        nova.set('config', { etapas: etapas, requisitos: requisitos })
+        // SPEC-2-002: etapa de aplicação dos checklists acompanha a versão restaurada
+        const ckO =
+          cfgOrigem.checklists && typeof cfgOrigem.checklists === 'object'
+            ? cfgOrigem.checklists
+            : {}
+        const checklists = {
+          entrada: KEYS.indexOf(ckO.entrada) >= 0 ? ckO.entrada : 'entrada_pendente',
+          revisao: KEYS.indexOf(ckO.revisao) >= 0 ? ckO.revisao : 'aguardando_revisao',
+        }
+        nova.set('config', { etapas: etapas, requisitos: requisitos, checklists: checklists })
         nova.set('motivo', motivo)
         nova.set('restaurada_de', origem.getInt('numero'))
         if (!su) nova.set('autor', auth.id)

@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import { cancelarAtividade, devolverAtividade, receberAtividade } from '@/services/handoffs'
 import { TempoDoCard } from '@/components/TempoDoCard'
+import { ChecklistDoCard } from '@/components/ChecklistDoCard'
 import { toast } from 'sonner'
 import { ClientResponseError } from 'pocketbase'
 import { Button } from '@/components/ui/button'
@@ -1037,6 +1038,13 @@ function CardDialog({
                   </div>
                 </div>
               )}
+
+            <ChecklistDoCard
+              cardId={d.id}
+              equipe={d.equipe}
+              coordenadorId={d.projeto.coordenador?.id ?? ''}
+              onAlterado={onAlterado}
+            />
 
             <TempoDoCard
               cardId={d.id}

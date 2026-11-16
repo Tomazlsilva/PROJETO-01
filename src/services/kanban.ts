@@ -135,7 +135,12 @@ export interface VersaoFluxo {
   id: string
   numero: number
   ativa: boolean
-  config: { etapas: EtapaConfig[]; requisitos: Requisitos }
+  config: {
+    etapas: EtapaConfig[]
+    requisitos: Requisitos
+    // SPEC-2-002: etapa em que cada tipo de checklist é aplicado
+    checklists?: { entrada: Etapa; revisao: Etapa }
+  }
   motivo: string
   restaurada_de: number | null
   autor: Pessoa | null
@@ -233,6 +238,7 @@ export const salvarFluxo = (dados: {
   base: string
   etapas: EtapaConfig[]
   requisitos: Requisitos
+  checklists?: { entrada: Etapa; revisao: Etapa }
   motivo: string
   remapeamentos?: Record<string, string>
 }) => pb.send<{ id: string; numero: number }>('/backend/v1/fluxo', { method: 'POST', body: dados })

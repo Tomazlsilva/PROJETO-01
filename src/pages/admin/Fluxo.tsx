@@ -29,8 +29,12 @@ import {
   ROTULO_CAMPO,
   TRANSICOES,
   type CampoEtapa,
+  type Etapa,
   type EtapaConfig,
 } from '@/lib/fluxo'
+
+type CkEtapas = { entrada: Etapa; revisao: Etapa }
+const CK_PADRAO: CkEtapas = { entrada: 'entrada_pendente', revisao: 'aguardando_revisao' }
 import {
   getFluxo,
   restaurarFluxo,
@@ -47,6 +51,7 @@ export default function Fluxo() {
   const [dados, setDados] = useState<Dados | null>(null)
   const [etapas, setEtapas] = useState<EtapaConfig[]>([])
   const [requisitos, setRequisitos] = useState<Requisitos>({})
+  const [ck, setCk] = useState<CkEtapas>(CK_PADRAO)
   const [remap, setRemap] = useState<Record<string, string>>({})
   const [motivo, setMotivo] = useState('')
   const [erros, setErros] = useState<Record<string, string>>({})
@@ -62,6 +67,7 @@ export default function Fluxo() {
           [...d.ativa.config.etapas].sort((a, b) => a.ordem - b.ordem).map((e) => ({ ...e })),
         )
         setRequisitos(JSON.parse(JSON.stringify(d.ativa.config.requisitos || {})))
+        setCk({ ...CK_PADRAO, ...(d.ativa.config.checklists || {}) })
       }
       setRemap({})
       setMotivo('')
@@ -87,9 +93,11 @@ export default function Fluxo() {
     return (
       JSON.stringify(orig.map((e) => [e.chave, e.nome, e.ativa])) !==
         JSON.stringify(etapas.map((e) => [e.chave, e.nome.trim(), e.ativa])) ||
-      JSON.stringify(dados.ativa.config.requisitos || {}) !== JSON.stringify(requisitos)
+      JSON.stringify(dados.ativa.config.requisitos || {}) !== JSON.stringify(requisitos) ||
+      JSON.stringify({ ...CK_PADRAO, ...(dados.ativa.config.checklists || {}) }) !==
+        JSON.stringify(ck)
     )
-  }, [dados, etapas, requisitos])
+  }, [dados, etapas, requisitos, ck])
 
   const mover = (i: number, d: -1 | 1) => {
     const j = i + d
@@ -119,6 +127,7 @@ export default function Fluxo() {
         base: dados.ativa.id,
         etapas: etapas.map((e) => ({ ...e, nome: e.nome.trim() })),
         requisitos,
+        checklists: ck,
         motivo: motivo.trim(),
         remapeamentos: remap,
       })
@@ -278,6 +287,40 @@ export default function Fluxo() {
               })}
             </tbody>
           </table>
+        </div>
+      </section>
+
+      <section className="bg-white rounded-xl border border-slate-200 p-6 space-y-3">
+        <h2 className="text-base font-bold text-slate-900">Quando aplicar os checklists</h2>
+        <p className="text-sm text-slate-500">
+          Ao entrar nesta etapa, o card recebe a versão vigente do checklist da disciplina (uma vez
+          só). Disciplina sem checklist real publicado fica “sem checklist” e não trava nada.
+        </p>
+        {erros.checklists && <p className="text-sm text-red-600">{erros.checklists}</p>}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {(
+            [
+              ['entrada', 'Checklist de entrada'],
+              ['revisao', 'Checklist de revisão'],
+            ] as const
+          ).map(([t, rot]) => (
+            <div key={t}>
+              <Label>{rot}</Label>
+              <Select value={ck[t]} onValueChange={(v) => setCk({ ...ck, [t]: v as Etapa })}>
+                <SelectTrigger className="h-9 mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {etapas.map((e) => (
+                    <SelectItem key={e.chave} value={e.chave}>
+                      {e.nome}
+                      {!e.ativa ? ' (inativa)' : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ))}
         </div>
       </section>
 

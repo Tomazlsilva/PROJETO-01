@@ -3,7 +3,17 @@ import type { Pessoa } from '@/services/projetos'
 import type { Bloqueio } from '@/services/kanban'
 import type { Etapa } from '@/lib/fluxo'
 
-export type MotivoFila = 'responsavel' | 'revisao' | 'bloqueio' | 'handoff'
+export type MotivoFila = 'responsavel' | 'revisao' | 'bloqueio' | 'handoff' | 'pendencia_entrada'
+
+// SPEC-2-002: pendência de entrada (item do checklist que falta) em que a pessoa é dona
+export interface PendenciaEntradaFila {
+  id: string
+  item: string
+  motivo: string
+  critico: boolean
+  prazo: string
+  vencida: boolean
+}
 
 export interface ItemFila {
   id: string
@@ -29,6 +39,7 @@ export interface ItemFila {
     remetente: Pessoa | null
     created: string
   } | null
+  pendencias_entrada?: PendenciaEntradaFila[]
   versao: string
   created: string
 }
@@ -82,4 +93,5 @@ export const MOTIVO_LABEL: Record<MotivoFila, string> = {
   revisao: 'Revisar',
   bloqueio: 'Resolver bloqueio',
   handoff: 'Pendência recebida',
+  pendencia_entrada: 'Pendência de entrada',
 }

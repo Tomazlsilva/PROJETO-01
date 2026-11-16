@@ -105,6 +105,15 @@ routerAdd(
       }
       if (ok.length > 0) requisitos[k] = ok
     }
+    // SPEC-2-002 (CA-2-002-01): etapa em que cada tipo de checklist é aplicado ao card
+    const ckIn = body.checklists && typeof body.checklists === 'object' ? body.checklists : {}
+    const checklists = { entrada: 'entrada_pendente', revisao: 'aguardando_revisao' }
+    for (const t of ['entrada', 'revisao']) {
+      if (ckIn[t] === undefined) continue
+      if (KEYS.indexOf(ckIn[t]) < 0)
+        ruim('checklists', 'invalido', 'Etapa inválida para aplicar o checklist de ' + t + '.')
+      checklists[t] = ckIn[t]
+    }
     const motivo = typeof body.motivo === 'string' ? body.motivo.trim().slice(0, 500) : ''
     const base = typeof body.base === 'string' ? body.base : ''
     const remap =
@@ -158,7 +167,7 @@ routerAdd(
         nova = new Record(tx.findCollectionByNameOrId('fluxo_versoes'))
         nova.set('numero', numero)
         nova.set('ativa', true)
-        nova.set('config', { etapas: etapas, requisitos: requisitos })
+        nova.set('config', { etapas: etapas, requisitos: requisitos, checklists: checklists })
         nova.set('motivo', motivo)
         if (!su) nova.set('autor', auth.id)
         tx.save(nova)
@@ -194,6 +203,7 @@ routerAdd(
           para: numero,
           motivo: motivo,
           remapeamentos: remapear,
+          checklists: checklists,
         })
         tx.save(a)
       })

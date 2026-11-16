@@ -139,11 +139,40 @@ routerAdd(
     )) {
       atvPorCard[a.getString('card')] = a
     }
+    // SPEC-2-002 (CA-2-002-05): pendências de entrada abertas em que a pessoa é dona
+    const pendPorCard = {}
+    for (const x of $app.findRecordsByFilter(
+      'checklist_pendencias',
+      "dono = {:p} && status = 'aberta' && projeto.arquivado = false",
+      'prazo',
+      0,
+      0,
+      { p: pid },
+    )) {
+      const cid = x.getString('card')
+      if (!pendPorCard[cid]) pendPorCard[cid] = []
+      const pz = x.getString('prazo').slice(0, 10)
+      pendPorCard[cid].push({
+        id: x.id,
+        item: x.getString('item_texto'),
+        motivo: x.getString('motivo'),
+        critico: x.getBool('critico'),
+        prazo: pz,
+        vencida: !!pz && pz < hoje,
+      })
+    }
     const jaTem = {}
     const todos = []
     for (const c of candidatos) {
       jaTem[c.id] = true
       todos.push(c)
+    }
+    for (const cid of Object.keys(pendPorCard)) {
+      if (jaTem[cid] || atvPorCard[cid]) continue
+      jaTem[cid] = true
+      try {
+        todos.push($app.findRecordById('projeto_disciplinas', cid))
+      } catch (_) {}
     }
     for (const cid of Object.keys(atvPorCard)) {
       if (jaTem[cid]) continue
@@ -162,6 +191,8 @@ routerAdd(
       const ativo = c.getString('etapa') !== 'aprovado'
       if (ativo && c.getString('responsavel') === pid) motivos.push('responsavel')
       if (bloqueado && c.getString('bloqueio_dono') === pid) motivos.push('bloqueio')
+      const pends = pendPorCard[c.id] || []
+      if (pends.length > 0) motivos.push('pendencia_entrada')
       if (
         c.getString('etapa') === 'aguardando_revisao' &&
         !bloqueado &&
@@ -209,6 +240,7 @@ routerAdd(
               created: atv.getString('created'),
             }
           : null,
+        pendencias_entrada: pends,
         versao: c.getString('updated'),
         created: c.getString('created'),
       })

@@ -328,7 +328,7 @@ function ListaItens({ itens, vazio }: { itens: ItemFila[]; vazio: string }) {
                     key={m}
                     className="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600"
                   >
-                    {MOTIVO_LABEL[m]}
+                    {MOTIVO_LABEL[m] ?? m}
                   </span>
                 ))}
               </span>
@@ -357,6 +357,20 @@ function ListaItens({ itens, vazio }: { itens: ItemFila[]; vazio: string }) {
                 </span>
               )}
             </div>
+            {(i.pendencias_entrada ?? []).map((p) => (
+              <div
+                key={p.id}
+                className={`mt-1.5 text-xs rounded-md px-2 py-1 border ${
+                  p.vencida
+                    ? 'bg-red-50 border-red-200 text-red-800'
+                    : 'bg-amber-50 border-amber-200 text-amber-900'
+                }`}
+              >
+                <strong>Falta na entrada{p.critico ? ' (crítico)' : ''}:</strong> {p.item} ·{' '}
+                {p.motivo} · prazo {formatarData(p.prazo)}
+                {p.vencida && <strong className="ml-1">· vencida</strong>}
+              </div>
+            ))}
           </Link>
         </li>
       ))}

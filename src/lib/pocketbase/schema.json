@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-16T12:48:51.316Z",
+  "generatedAt": "2026-11-16T12:56:42.617Z",
   "collections": [
     {
       "name": "users",
@@ -2546,6 +2546,362 @@
       ],
       "indexes": [
         "CREATE UNIQUE INDEX idx_chk_versoes_num ON checklist_versoes (modelo, numero)"
+      ]
+    },
+    {
+      "name": "checklists_aplicados",
+      "type": "base",
+      "apiRules": {
+        "list": null,
+        "view": null,
+        "create": null,
+        "update": null,
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "card",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "projeto_disciplinas"
+        },
+        {
+          "name": "projeto",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "projetos"
+        },
+        {
+          "name": "tipo",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": [
+            "entrada",
+            "revisao"
+          ]
+        },
+        {
+          "name": "modelo",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "checklist_modelos"
+        },
+        {
+          "name": "versao",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "checklist_versoes"
+        },
+        {
+          "name": "numero",
+          "type": "number",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "itens",
+          "type": "json",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "resultados",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "etapa",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "origem",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": [
+            "etapa",
+            "manual"
+          ]
+        },
+        {
+          "name": "aplicado_por",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate"
+          ]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_chk_aplicado_card_tipo ON checklists_aplicados (card, tipo)",
+        "CREATE INDEX idx_chk_aplicado_projeto ON checklists_aplicados (projeto)"
+      ]
+    },
+    {
+      "name": "checklist_pendencias",
+      "type": "base",
+      "apiRules": {
+        "list": null,
+        "view": null,
+        "create": null,
+        "update": null,
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "aplicado",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "checklists_aplicados"
+        },
+        {
+          "name": "card",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "projeto_disciplinas"
+        },
+        {
+          "name": "projeto",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "projetos"
+        },
+        {
+          "name": "item_id",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "item_texto",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "critico",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "motivo",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "dono",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "prazo",
+          "type": "date",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": [
+            "aberta",
+            "resolvida"
+          ]
+        },
+        {
+          "name": "resolucao",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "resolvida_por",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "resolvida_em",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "aberta_por",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate"
+          ]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_chk_pend_dono ON checklist_pendencias (dono, status)",
+        "CREATE INDEX idx_chk_pend_card ON checklist_pendencias (card, status)"
+      ]
+    },
+    {
+      "name": "checklist_eventos",
+      "type": "base",
+      "apiRules": {
+        "list": null,
+        "view": null,
+        "create": null,
+        "update": null,
+        "delete": null
+      },
+      "fields": [
+        {
+          "name": "aplicado",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "checklists_aplicados"
+        },
+        {
+          "name": "card",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "projeto_disciplinas"
+        },
+        {
+          "name": "projeto",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "projetos"
+        },
+        {
+          "name": "tipo",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "acao",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "item_id",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "item_texto",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "antes",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "depois",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "justificativa",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "detalhes",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "autor",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate"
+          ]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_chk_eventos_card ON checklist_eventos (card, created)"
       ]
     }
   ]
